@@ -1,9 +1,11 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../shared/api/dio_client.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../auth/models/user_model.dart';
 
-class ProfileHeroCard extends StatelessWidget {
+class ProfileHeroCard extends ConsumerWidget {
   final UserModel user;
   final bool isUploading;
   final VoidCallback onPickAvatar;
@@ -20,13 +22,16 @@ class ProfileHeroCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final cardBg = isDark ? const Color(0xFF14131C) : Colors.white;
     final cardBorder = isDark ? const Color(0xFF262338) : const Color(0xFFE2E8F0);
     final textPrimary = isDark ? Colors.white : const Color(0xFF1E293B);
     final textSecondary = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
     final accentGold = isDark ? AppColors.accentGold : AppColors.accentGoldLightMode;
-    final isGoogleAuth = user.authProvider == 1;
+    final hasGoogleLogin = user.hasGoogleLogin;
+    final apiBaseUrl = ref.watch(apiBaseUrlProvider).valueOrNull ??
+        ref.watch(dioClientProvider).options.baseUrl;
+    final avatarUrl = user.avatarUrlForBase(apiBaseUrl);
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -66,9 +71,9 @@ class ProfileHeroCard extends StatelessWidget {
                     width: 92,
                     height: 92,
                     color: isDark ? const Color(0xFF221F33) : const Color(0xFFE2E8F0),
-                    child: user.fullAvatarUrl != null && user.fullAvatarUrl!.isNotEmpty
+                    child: avatarUrl != null && avatarUrl.isNotEmpty
                         ? CachedNetworkImage(
-                            imageUrl: user.fullAvatarUrl!,
+                            imageUrl: avatarUrl,
                             fit: BoxFit.cover,
                             placeholder: (context, url) => Center(
                               child: SizedBox(
@@ -221,7 +226,7 @@ class ProfileHeroCard extends StatelessWidget {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (isGoogleAuth) ...[
+                    if (hasGoogleLogin) ...[
                       Container(
                         width: 14,
                         height: 14,
@@ -237,7 +242,7 @@ class ProfileHeroCard extends StatelessWidget {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        'Google OAuth',
+                        user.hasLocalLogin ? 'Google + Local' : 'Google',
                         style: TextStyle(
                           color: textPrimary,
                           fontWeight: FontWeight.w600,

@@ -14,7 +14,6 @@ import '../widgets/auth_card_container.dart';
 import '../widgets/auth_divider.dart';
 import '../widgets/auth_error_banner.dart';
 import '../widgets/google_sign_in_button.dart';
-import 'google_oauth_webview_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -41,12 +40,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   Future<void> _loadRemembered() async {
     final tokenStorage = ref.read(tokenStorageServiceProvider);
-    final creds = await tokenStorage.getRememberedCredentials();
-    if (creds['rememberMe'] == true && mounted) {
+    final email = await tokenStorage.getRememberedEmail();
+    if (email != null && mounted) {
       setState(() {
         _rememberMe = true;
-        _emailController.text = creds['email'] ?? '';
-        _passwordController.text = creds['password'] ?? '';
+        _emailController.text = email;
       });
     } else if (mounted) {
       setState(() {
@@ -93,37 +91,38 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   void _handleGoogleLogin(String lang) async {
-    final themeMode = ref.read(themeModeProvider);
-    final isDark = themeMode == ThemeMode.dark;
     final nav = Navigator.of(context);
     final scaffold = ScaffoldMessenger.of(context);
 
     setState(() => _isGoogleLoading = true);
 
-    String? googleTokenOrCode;
+    String? googleIdToken;
 
     try {
-      // 1. Kích hoạt Google Sign-In SDK trực tiếp trên thiết bị
-      googleTokenOrCode = await GoogleAuthService.signIn();
-    } catch (_) {
-      // 2. Fallback qua Google OAuth WebView
+      googleIdToken = await GoogleAuthService.signIn();
+    } catch (error, stackTrace) {
+      debugPrint('Google Sign-In SDK failed: $error\n$stackTrace');
       if (mounted) {
-        try {
-          googleTokenOrCode = await GoogleOAuthWebViewScreen.show(
-            context,
-            isDark: isDark,
-            lang: lang,
-          );
-        } catch (_) {}
+        setState(() => _isGoogleLoading = false);
+        scaffold.showSnackBar(
+          SnackBar(
+            backgroundColor: AppColors.error,
+            content: Text(
+              lang == 'vi'
+                  ? 'Không thể kết nối với Google. Vui lòng thử lại.'
+                  : 'Unable to connect to Google. Please try again.',
+            ),
+          ),
+        );
       }
+      return;
     }
 
     if (!mounted) return;
 
-    // 3. Gửi Token / Code về Backend qua HTTP POST /api/auth/google
-    if (googleTokenOrCode != null && googleTokenOrCode.trim().isNotEmpty) {
+    if (googleIdToken != null && googleIdToken.trim().isNotEmpty) {
       final authNotifier = ref.read(authStateProvider.notifier);
-      final success = await authNotifier.loginWithGoogle(googleTokenOrCode);
+      final success = await authNotifier.loginWithGoogle(googleIdToken);
 
       if (mounted) {
         setState(() => _isGoogleLoading = false);
@@ -293,7 +292,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     final newVal = !_rememberMe;
                     setState(() => _rememberMe = newVal);
                     if (!newVal) {
-                      await ref.read(tokenStorageServiceProvider).clearRememberedCredentials();
+                      await ref.read(tokenStorageServiceProvider).clearRememberedEmail();
                     }
                   },
                   child: Row(
@@ -312,7 +311,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             final newVal = val ?? false;
                             setState(() => _rememberMe = newVal);
                             if (!newVal) {
-                              await ref.read(tokenStorageServiceProvider).clearRememberedCredentials();
+                              await ref.read(tokenStorageServiceProvider).clearRememberedEmail();
                             }
                           },
                         ),

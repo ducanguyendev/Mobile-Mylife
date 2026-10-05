@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../shared/api/dio_client.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme_provider.dart';
 import '../../../shared/widgets/app_menu_drawer.dart';
@@ -22,6 +23,9 @@ class PortfolioHomeScreen extends ConsumerWidget {
     final isDark = themeMode == ThemeMode.dark;
     final authState = ref.watch(authStateProvider);
     final user = authState.user;
+    final apiBaseUrl = ref.watch(apiBaseUrlProvider).valueOrNull ??
+        ref.watch(dioClientProvider).options.baseUrl;
+    final avatarUrl = user?.avatarUrlForBase(apiBaseUrl);
 
     final accentColor = isDark ? AppColors.accentGold : AppColors.accentGoldLightMode;
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF1E293B);
@@ -67,9 +71,9 @@ class PortfolioHomeScreen extends ConsumerWidget {
                     width: 36,
                     height: 36,
                     color: accentColor,
-                    child: user.fullAvatarUrl != null && user.fullAvatarUrl!.isNotEmpty
+                    child: avatarUrl != null && avatarUrl.isNotEmpty
                         ? CachedNetworkImage(
-                            imageUrl: user.fullAvatarUrl!,
+                            imageUrl: avatarUrl,
                             fit: BoxFit.cover,
                             placeholder: (_, __) => Center(
                               child: SizedBox(

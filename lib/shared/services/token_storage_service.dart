@@ -7,6 +7,10 @@ final tokenStorageServiceProvider = Provider<TokenStorageService>((ref) {
 });
 
 class TokenStorageService {
+  // Kept only to remove values written by older app versions. New code never
+  // reads or writes a password from secure storage.
+  static const _legacyRememberedPasswordKey = 'remembered_password';
+
   final FlutterSecureStorage _storage = const FlutterSecureStorage(
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
     iOptions: IOSOptions(accessibility: KeychainAccessibility.first_unlock),
@@ -15,9 +19,19 @@ class TokenStorageService {
   Future<void> saveTokens({
     required String accessToken,
     required String refreshToken,
+    int? accessTokenExpiresIn,
+    int? refreshTokenExpiresIn,
   }) async {
     await _storage.write(key: AppConstants.keyAccessToken, value: accessToken);
     await _storage.write(key: AppConstants.keyRefreshToken, value: refreshToken);
+    await _saveExpiry(
+      AppConstants.keyAccessTokenExpiresAt,
+      accessTokenExpiresIn,
+    );
+    await _saveExpiry(
+      AppConstants.keyRefreshTokenExpiresAt,
+      refreshTokenExpiresIn,
+    );
   }
 
   Future<String?> getAccessToken() async {
@@ -31,47 +45,41 @@ class TokenStorageService {
   Future<void> clearTokens() async {
     await _storage.delete(key: AppConstants.keyAccessToken);
     await _storage.delete(key: AppConstants.keyRefreshToken);
+    await _storage.delete(key: AppConstants.keyAccessTokenExpiresAt);
+    await _storage.delete(key: AppConstants.keyRefreshTokenExpiresAt);
   }
 
-  Future<void> saveUserEmail(String email) async {
-    await _storage.write(key: AppConstants.keyUserEmail, value: email);
-  }
+  Future<DateTime?> getAccessTokenExpiry() =>
+      _getExpiry(AppConstants.keyAccessTokenExpiresAt);
 
-  Future<String?> getUserEmail() async {
-    return await _storage.read(key: AppConstants.keyUserEmail);
-  }
+  Future<DateTime?> getRefreshTokenExpiry() =>
+      _getExpiry(AppConstants.keyRefreshTokenExpiresAt);
 
-  Future<void> saveRememberedCredentials({
-    required String email,
-    required String password,
-  }) async {
+  /// "Remember me" deliberately remembers only an email address. Sessions are
+  /// restored with refresh tokens; a raw password must never be persisted.
+  Future<void> saveRememberedEmail(String email) async {
     await _storage.write(key: AppConstants.keyRememberMe, value: 'true');
     await _storage.write(key: AppConstants.keyUserEmail, value: email);
-    await _storage.write(key: AppConstants.keyRememberedPassword, value: password);
+    await _storage.delete(key: _legacyRememberedPasswordKey);
   }
 
-  Future<void> clearRememberedCredentials() async {
+  Future<void> clearRememberedEmail() async {
     await _storage.delete(key: AppConstants.keyRememberMe);
     await _storage.delete(key: AppConstants.keyUserEmail);
-    await _storage.delete(key: AppConstants.keyRememberedPassword);
+    await _storage.delete(key: _legacyRememberedPasswordKey);
   }
 
-  Future<Map<String, dynamic>> getRememberedCredentials() async {
+  Future<String?> getRememberedEmail() async {
     final rememberMe = await _storage.read(key: AppConstants.keyRememberMe);
-    if (rememberMe == 'true') {
-      final email = await _storage.read(key: AppConstants.keyUserEmail);
-      final password = await _storage.read(key: AppConstants.keyRememberedPassword);
-      return {
-        'rememberMe': true,
-        'email': email ?? '',
-        'password': password ?? '',
-      };
-    }
-    return {
-      'rememberMe': false,
-      'email': '',
-      'password': '',
-    };
+    // Purge the legacy raw-password key on the first run after an upgrade.
+    await _storage.delete(key: _legacyRememberedPasswordKey);
+    if (rememberMe != 'true') return null;
+    return _storage.read(key: AppConstants.keyUserEmail);
+  }
+
+  Future<bool> isRememberMeEnabled() async {
+    await _storage.delete(key: _legacyRememberedPasswordKey);
+    return (await _storage.read(key: AppConstants.keyRememberMe)) == 'true';
   }
 
   Future<void> saveLanguage(String lang) async {
@@ -89,5 +97,22 @@ class TokenStorageService {
   Future<String> getBaseUrl() async {
     final custom = await _storage.read(key: AppConstants.keyApiBaseUrl);
     return custom ?? AppConstants.defaultBaseUrl;
+  }
+
+  Future<void> _saveExpiry(String key, int? expiresInSeconds) async {
+    if (expiresInSeconds == null || expiresInSeconds <= 0) {
+      await _storage.delete(key: key);
+      return;
+    }
+    final expiresAt = DateTime.now()
+        .add(Duration(seconds: expiresInSeconds))
+        .millisecondsSinceEpoch;
+    await _storage.write(key: key, value: expiresAt.toString());
+  }
+
+  Future<DateTime?> _getExpiry(String key) async {
+    final raw = await _storage.read(key: key);
+    final millis = raw == null ? null : int.tryParse(raw);
+    return millis == null ? null : DateTime.fromMillisecondsSinceEpoch(millis);
   }
 }

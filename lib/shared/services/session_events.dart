@@ -1,12 +1,12 @@
+import 'package:flutter/foundation.dart';
+
 typedef SessionExpiredCallback = void Function();
 
 class SessionEventBus {
   static final List<SessionExpiredCallback> _listeners = [];
 
   static void addListener(SessionExpiredCallback listener) {
-    if (!_listeners.contains(listener)) {
-      _listeners.add(listener);
-    }
+    if (!_listeners.contains(listener)) _listeners.add(listener);
   }
 
   static void removeListener(SessionExpiredCallback listener) {
@@ -17,7 +17,9 @@ class SessionEventBus {
     for (final listener in List<SessionExpiredCallback>.from(_listeners)) {
       try {
         listener();
-      } catch (_) {}
+      } catch (error, stackTrace) {
+        debugPrint('Session-expiration listener failed: $error\n$stackTrace');
+      }
     }
   }
 }

@@ -23,7 +23,8 @@ class ProfileScreen extends ConsumerStatefulWidget {
   ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends ConsumerState<ProfileScreen> with SingleTickerProviderStateMixin {
+class _ProfileScreenState extends ConsumerState<ProfileScreen>
+    with SingleTickerProviderStateMixin {
   bool _isUploading = false;
   late TabController _tabController;
 
@@ -41,7 +42,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with SingleTicker
 
   Future<void> _pickAndUploadAvatar(String lang) async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    final picked =
+        await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
 
     if (picked != null) {
       setState(() => _isUploading = true);
@@ -75,7 +77,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with SingleTicker
             errorMsg = lang == 'vi'
                 ? 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.'
                 : 'Session expired. Please log in again.';
-          } else if (e.response?.data != null && e.response?.data is Map && e.response?.data['message'] != null) {
+          } else if (e.response?.data != null &&
+              e.response?.data is Map &&
+              e.response?.data['message'] != null) {
             errorMsg = e.response!.data['message'].toString();
           }
         }
@@ -133,15 +137,17 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with SingleTicker
             child: Text(lang == 'vi' ? 'Hủy' : 'Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
-              ref.read(authStateProvider.notifier).logout();
+              await ref.read(authStateProvider.notifier).logout();
+              if (!context.mounted) return;
               Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.error,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
             ),
             child: Text(lang == 'vi' ? 'Đăng xuất' : 'Sign Out'),
           ),
@@ -160,10 +166,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with SingleTicker
     final user = authState.user;
 
     final bg = isDark ? const Color(0xFF0A0A0A) : const Color(0xFFF8F9FA);
-    final cardBorder = isDark ? const Color(0xFF262338) : const Color(0xFFE2E8F0);
+    final cardBorder =
+        isDark ? const Color(0xFF262338) : const Color(0xFFE2E8F0);
     final textPrimary = isDark ? Colors.white : const Color(0xFF1E293B);
-    final textSecondary = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
-    final accentGold = isDark ? AppColors.accentGold : AppColors.accentGoldLightMode;
+    final textSecondary =
+        isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final accentGold =
+        isDark ? AppColors.accentGold : AppColors.accentGoldLightMode;
 
     if (!authState.isAuthenticated || user == null) {
       return Scaffold(
@@ -172,7 +181,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with SingleTicker
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: Icon(Icons.arrow_back_ios_new_rounded, color: textPrimary, size: 20),
+            icon: Icon(Icons.arrow_back_ios_new_rounded,
+                color: textPrimary, size: 20),
             onPressed: () => Navigator.pop(context),
           ),
         ),
@@ -187,7 +197,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with SingleTicker
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, color: textPrimary, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new_rounded,
+              color: textPrimary, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -245,7 +256,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with SingleTicker
             // 2. TAB CONTROLS (Thông tin & Bảo mật)
             Container(
               decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF14131C) : const Color(0xFFF1F5F9),
+                color:
+                    isDark ? const Color(0xFF14131C) : const Color(0xFFF1F5F9),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: cardBorder),
               ),
@@ -258,8 +270,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with SingleTicker
                 indicatorSize: TabBarIndicatorSize.tab,
                 labelColor: Colors.black,
                 unselectedLabelColor: textSecondary,
-                labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                labelStyle:
+                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                unselectedLabelStyle:
+                    const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                 tabs: [
                   Tab(
                     icon: const Icon(Icons.badge_outlined, size: 18),
@@ -267,7 +281,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> with SingleTicker
                   ),
                   Tab(
                     icon: const Icon(Icons.security_rounded, size: 18),
-                    text: lang == 'vi' ? 'Bảo mật & Cài đặt' : 'Security & Settings',
+                    text: lang == 'vi'
+                        ? 'Bảo mật & Cài đặt'
+                        : 'Security & Settings',
                   ),
                 ],
               ),

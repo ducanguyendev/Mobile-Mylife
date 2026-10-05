@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../api/dio_client.dart';
 import '../../features/admin/views/admin_dashboard_screen.dart';
 import '../../features/auth/providers/auth_provider.dart';
 import '../../features/auth/views/login_screen.dart';
@@ -20,14 +21,21 @@ class AppMenuDrawer extends ConsumerWidget {
     final langNotifier = ref.read(languageProvider.notifier);
     final authState = ref.watch(authStateProvider);
     final user = authState.user;
+    final apiBaseUrl = ref.watch(apiBaseUrlProvider).valueOrNull ??
+        ref.watch(dioClientProvider).options.baseUrl;
+    final avatarUrl = user?.avatarUrlForBase(apiBaseUrl);
     final isVi = currentLang == 'vi';
 
     final bgDrawer = isDark ? const Color(0xFF111111) : const Color(0xFFFFFFFF);
-    final cardSurface = isDark ? const Color(0xFF181818) : const Color(0xFFF7F7F8);
-    final cardBorder = isDark ? const Color(0xFF242424) : const Color(0xFFE8E8EC);
+    final cardSurface =
+        isDark ? const Color(0xFF181818) : const Color(0xFFF7F7F8);
+    final cardBorder =
+        isDark ? const Color(0xFF242424) : const Color(0xFFE8E8EC);
     final textPrimary = isDark ? Colors.white : const Color(0xFF111111);
-    final textSecondary = isDark ? const Color(0xFF9E9E9E) : const Color(0xFF6E6E73);
-    final accentGold = isDark ? AppColors.accentGold : AppColors.accentGoldLightMode;
+    final textSecondary =
+        isDark ? const Color(0xFF9E9E9E) : const Color(0xFF6E6E73);
+    final accentGold =
+        isDark ? AppColors.accentGold : AppColors.accentGoldLightMode;
 
     return Drawer(
       backgroundColor: bgDrawer,
@@ -101,7 +109,8 @@ class AppMenuDrawer extends ConsumerWidget {
                           shape: BoxShape.circle,
                           border: Border.all(color: cardBorder),
                         ),
-                        child: Icon(Icons.close_rounded, color: textSecondary, size: 18),
+                        child: Icon(Icons.close_rounded,
+                            color: textSecondary, size: 18),
                       ),
                     ),
                   ),
@@ -114,7 +123,8 @@ class AppMenuDrawer extends ConsumerWidget {
             // ==============================================================
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
                 children: [
                   // ----------------------------------------------------------
                   // SECTION A: THEME SWITCHER
@@ -126,7 +136,8 @@ class AppMenuDrawer extends ConsumerWidget {
                   ),
                   const SizedBox(height: 10),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 10),
                     decoration: BoxDecoration(
                       color: cardSurface,
                       borderRadius: BorderRadius.circular(16),
@@ -146,7 +157,9 @@ class AppMenuDrawer extends ConsumerWidget {
                             ),
                           ),
                           child: Icon(
-                            isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                            isDark
+                                ? Icons.dark_mode_rounded
+                                : Icons.light_mode_rounded,
                             color: accentGold,
                             size: 18,
                           ),
@@ -154,7 +167,9 @@ class AppMenuDrawer extends ConsumerWidget {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            isDark ? langNotifier.tr('theme_dark') : langNotifier.tr('theme_light'),
+                            isDark
+                                ? langNotifier.tr('theme_dark')
+                                : langNotifier.tr('theme_light'),
                             style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
@@ -165,7 +180,8 @@ class AppMenuDrawer extends ConsumerWidget {
                         Switch.adaptive(
                           value: isDark,
                           activeTrackColor: accentGold,
-                          activeThumbColor: isDark ? const Color(0xFF111111) : Colors.white,
+                          activeThumbColor:
+                              isDark ? const Color(0xFF111111) : Colors.white,
                           onChanged: (_) {
                             ref.read(themeModeProvider.notifier).toggleTheme();
                           },
@@ -190,7 +206,9 @@ class AppMenuDrawer extends ConsumerWidget {
                       // Vietnam Flag
                       Expanded(
                         child: InkWell(
-                          onTap: () => ref.read(languageProvider.notifier).setLanguage('vi'),
+                          onTap: () => ref
+                              .read(languageProvider.notifier)
+                              .setLanguage('vi'),
                           borderRadius: BorderRadius.circular(16),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 220),
@@ -208,7 +226,8 @@ class AppMenuDrawer extends ConsumerWidget {
                               boxShadow: isVi
                                   ? [
                                       BoxShadow(
-                                        color: accentGold.withValues(alpha: 0.18),
+                                        color:
+                                            accentGold.withValues(alpha: 0.18),
                                         blurRadius: 10,
                                         offset: const Offset(0, 3),
                                       ),
@@ -248,7 +267,9 @@ class AppMenuDrawer extends ConsumerWidget {
                       // USA Flag
                       Expanded(
                         child: InkWell(
-                          onTap: () => ref.read(languageProvider.notifier).setLanguage('en'),
+                          onTap: () => ref
+                              .read(languageProvider.notifier)
+                              .setLanguage('en'),
                           borderRadius: BorderRadius.circular(16),
                           child: AnimatedContainer(
                             duration: const Duration(milliseconds: 220),
@@ -266,7 +287,8 @@ class AppMenuDrawer extends ConsumerWidget {
                               boxShadow: !isVi
                                   ? [
                                       BoxShadow(
-                                        color: accentGold.withValues(alpha: 0.18),
+                                        color:
+                                            accentGold.withValues(alpha: 0.18),
                                         blurRadius: 10,
                                         offset: const Offset(0, 3),
                                       ),
@@ -326,12 +348,14 @@ class AppMenuDrawer extends ConsumerWidget {
                           Navigator.pop(context);
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => const LoginScreen()),
+                            MaterialPageRoute(
+                                builder: (_) => const LoginScreen()),
                           );
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: accentGold,
-                          foregroundColor: isDark ? const Color(0xFF0A0A0A) : Colors.white,
+                          foregroundColor:
+                              isDark ? const Color(0xFF0A0A0A) : Colors.white,
                           elevation: 3,
                           shadowColor: accentGold.withValues(alpha: 0.35),
                           shape: RoundedRectangleBorder(
@@ -344,7 +368,9 @@ class AppMenuDrawer extends ConsumerWidget {
                             Icon(
                               Icons.login_rounded,
                               size: 19,
-                              color: isDark ? const Color(0xFF0A0A0A) : Colors.white,
+                              color: isDark
+                                  ? const Color(0xFF0A0A0A)
+                                  : Colors.white,
                             ),
                             const SizedBox(width: 8),
                             Text(
@@ -353,7 +379,9 @@ class AppMenuDrawer extends ConsumerWidget {
                                 fontSize: 14,
                                 fontWeight: FontWeight.w800,
                                 letterSpacing: 1.0,
-                                color: isDark ? const Color(0xFF0A0A0A) : Colors.white,
+                                color: isDark
+                                    ? const Color(0xFF0A0A0A)
+                                    : Colors.white,
                               ),
                             ),
                           ],
@@ -377,21 +405,32 @@ class AppMenuDrawer extends ConsumerWidget {
                                 padding: const EdgeInsets.all(2.5),
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: accentGold, width: 1.5),
+                                  border:
+                                      Border.all(color: accentGold, width: 1.5),
                                 ),
                                 child: CircleAvatar(
                                   radius: 20,
                                   backgroundColor: accentGold,
-                                  backgroundImage: user.avatarUrl != null && user.avatarUrl!.isNotEmpty
-                                      ? NetworkImage(user.avatarUrl!)
-                                      : null,
-                                  child: user.avatarUrl == null || user.avatarUrl!.isEmpty
+                                  backgroundImage:
+                                      avatarUrl != null && avatarUrl.isNotEmpty
+                                          ? NetworkImage(avatarUrl)
+                                          : null,
+                                  child: avatarUrl == null || avatarUrl.isEmpty
                                       ? Text(
                                           user.email.trim().length >= 2
-                                              ? user.email.trim().substring(0, 2).toUpperCase()
-                                              : (user.email.trim().isNotEmpty ? user.email.trim().toUpperCase() : 'U'),
+                                              ? user.email
+                                                  .trim()
+                                                  .substring(0, 2)
+                                                  .toUpperCase()
+                                              : (user.email.trim().isNotEmpty
+                                                  ? user.email
+                                                      .trim()
+                                                      .toUpperCase()
+                                                  : 'U'),
                                           style: TextStyle(
-                                            color: isDark ? const Color(0xFF0A0A0A) : Colors.white,
+                                            color: isDark
+                                                ? const Color(0xFF0A0A0A)
+                                                : Colors.white,
                                             fontWeight: FontWeight.w800,
                                             fontSize: 13,
                                           ),
@@ -416,9 +455,11 @@ class AppMenuDrawer extends ConsumerWidget {
                                     ),
                                     const SizedBox(height: 3),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: accentGold.withValues(alpha: 0.18),
+                                        color:
+                                            accentGold.withValues(alpha: 0.18),
                                         borderRadius: BorderRadius.circular(4),
                                       ),
                                       child: Text(
@@ -447,7 +488,8 @@ class AppMenuDrawer extends ConsumerWidget {
                               Navigator.pop(context);
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                                MaterialPageRoute(
+                                    builder: (_) => const ProfileScreen()),
                               );
                             },
                           ),
@@ -463,7 +505,9 @@ class AppMenuDrawer extends ConsumerWidget {
                                 Navigator.pop(context);
                                 Navigator.push(
                                   context,
-                                  MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
+                                  MaterialPageRoute(
+                                      builder: (_) =>
+                                          const AdminDashboardScreen()),
                                 );
                               },
                             ),
@@ -490,16 +534,21 @@ class AppMenuDrawer extends ConsumerWidget {
                             accentColor: accentGold,
                             iconColor: AppColors.error,
                             textColor: AppColors.error,
-                            onTap: () {
+                            onTap: () async {
                               Navigator.pop(context);
-                              ref.read(authStateProvider.notifier).logout();
+                              await ref
+                                  .read(authStateProvider.notifier)
+                                  .logout();
+                              if (!context.mounted) return;
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
                                   backgroundColor: accentGold,
                                   content: Text(
                                     langNotifier.tr('logged_out_msg'),
                                     style: TextStyle(
-                                      color: isDark ? const Color(0xFF0A0A0A) : Colors.white,
+                                      color: isDark
+                                          ? const Color(0xFF0A0A0A)
+                                          : Colors.white,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -591,7 +640,8 @@ class AppMenuDrawer extends ConsumerWidget {
         style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w600,
-          color: textColor ?? (isDark ? AppColors.textPrimary : AppColors.textPrimaryLight),
+          color: textColor ??
+              (isDark ? AppColors.textPrimary : AppColors.textPrimaryLight),
         ),
       ),
       trailing: Icon(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../shared/api/api_error.dart';
 import '../../../shared/l10n/app_language_provider.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme_provider.dart';
@@ -145,23 +146,28 @@ class _EditProfileDialogState extends ConsumerState<EditProfileDialog> {
             SnackBar(
               backgroundColor: AppColors.error,
               content: Text(
-                lang == 'vi'
-                    ? 'Cập nhật thất bại. Vui lòng kiểm tra lại thông tin.'
-                    : 'Update failed. Please check your information.',
+                ref.read(authStateProvider).errorMessage ??
+                    (lang == 'vi'
+                        ? 'Cập nhật thất bại. Vui lòng kiểm tra lại thông tin.'
+                        : 'Update failed. Please check your information.'),
               ),
             ),
           );
         }
       }
-    } catch (_) {
+    } catch (error, stackTrace) {
+      debugPrint('Profile save dialog failed: $error\n$stackTrace');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             backgroundColor: AppColors.error,
             content: Text(
-              lang == 'vi'
-                  ? 'Lỗi kết nối máy chủ.'
-                  : 'Server connection error.',
+              ApiError.message(
+                error,
+                fallback: lang == 'vi'
+                    ? 'Lỗi kết nối máy chủ.'
+                    : 'Server connection error.',
+              ),
             ),
           ),
         );

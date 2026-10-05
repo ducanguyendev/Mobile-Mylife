@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../shared/api/api_error.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/utils/validators.dart';
 import '../../../shared/widgets/cyber_button.dart';
@@ -11,7 +12,8 @@ class ChangePasswordDialog extends ConsumerStatefulWidget {
   const ChangePasswordDialog({super.key});
 
   @override
-  ConsumerState<ChangePasswordDialog> createState() => _ChangePasswordDialogState();
+  ConsumerState<ChangePasswordDialog> createState() =>
+      _ChangePasswordDialogState();
 }
 
 class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
@@ -49,12 +51,18 @@ class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
             ),
           );
         }
-      } catch (e) {
+      } catch (error, stackTrace) {
+        debugPrint('Password change failed: $error\n$stackTrace');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               backgroundColor: AppColors.error,
-              content: Text('Mật khẩu hiện tại không đúng hoặc có lỗi xảy ra.'),
+              content: Text(
+                ApiError.message(
+                  error,
+                  fallback: 'Mật khẩu hiện tại không đúng hoặc có lỗi xảy ra.',
+                ),
+              ),
             ),
           );
         }
@@ -86,7 +94,9 @@ class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
                 controller: _currentController,
                 label: 'MẬT KHẨU HIỆN TẠI',
                 obscureText: true,
-                validator: (v) => v == null || v.isEmpty ? 'Vui lòng nhập mật khẩu hiện tại' : null,
+                validator: (v) => v == null || v.isEmpty
+                    ? 'Vui lòng nhập mật khẩu hiện tại'
+                    : null,
               ),
               const SizedBox(height: 12),
               CustomTextField(
@@ -100,7 +110,8 @@ class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
                 controller: _confirmController,
                 label: 'NHẬP LẠI MẬT KHẨU MỚI',
                 obscureText: true,
-                validator: (v) => Validators.validateConfirmPassword(v, _newController.text),
+                validator: (v) =>
+                    Validators.validateConfirmPassword(v, _newController.text),
               ),
               const SizedBox(height: 20),
               CyberButton(

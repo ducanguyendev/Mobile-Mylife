@@ -13,9 +13,10 @@ class AppConstants {
   // Storage Keys
   static const String keyAccessToken = 'jwt_access_token';
   static const String keyRefreshToken = 'jwt_refresh_token';
+  static const String keyAccessTokenExpiresAt = 'jwt_access_token_expires_at';
+  static const String keyRefreshTokenExpiresAt = 'jwt_refresh_token_expires_at';
   static const String keyUserEmail = 'saved_user_email';
   static const String keyRememberMe = 'remember_me';
-  static const String keyRememberedPassword = 'remembered_password';
   static const String keyLanguage = 'app_language';
   static const String keyApiBaseUrl = 'custom_api_base_url';
 }

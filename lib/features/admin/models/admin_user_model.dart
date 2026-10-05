@@ -1,5 +1,7 @@
+import '../../auth/models/user_model.dart';
+
 class AdminUserModel {
-  final String id;
+  final int id;
   final String email;
   final String? fullName;
   final String? phoneNumber;
@@ -8,7 +10,7 @@ class AdminUserModel {
   final bool isActive;
   final DateTime createdAt;
 
-  AdminUserModel({
+  const AdminUserModel({
     required this.id,
     required this.email,
     this.fullName,
@@ -19,18 +21,35 @@ class AdminUserModel {
     required this.createdAt,
   });
 
+  bool get isAdmin => role == UserModel.roleAdmin;
+
   factory AdminUserModel.fromJson(Map<String, dynamic> json) {
+    final id = _parseId(json['id']);
     return AdminUserModel(
-      id: json['id'] ?? '',
-      email: json['email'] ?? '',
-      fullName: json['fullName'],
-      phoneNumber: json['phoneNumber'],
-      avatarUrl: json['avatarUrl'],
-      role: json['role'] ?? 'Member',
-      isActive: json['isActive'] ?? true,
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
-          : DateTime.now(),
+      id: id,
+      email: json['email']?.toString() ?? '',
+      fullName: _nullableString(json['fullName']),
+      phoneNumber: _nullableString(json['phoneNumber']),
+      avatarUrl: _nullableString(json['avatarUrl']),
+      role: UserModel.normalizeRole(json['role']),
+      isActive: json['isActive'] is bool ? json['isActive'] as bool : true,
+      createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0),
     );
+  }
+
+  static int _parseId(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) {
+      final parsed = int.tryParse(value);
+      if (parsed != null) return parsed;
+    }
+    throw const FormatException('Admin user id is missing or invalid.');
+  }
+
+  static String? _nullableString(dynamic value) {
+    final text = value?.toString().trim();
+    return text == null || text.isEmpty ? null : text;
   }
 }

@@ -20,7 +20,7 @@ class AuthApiService {
       ApiEndpoints.login,
       data: request.toJson(),
     );
-    return response.data;
+    return _asMap(response.data);
   }
 
   Future<Map<String, dynamic>> register(RegisterRequest request) async {
@@ -28,23 +28,33 @@ class AuthApiService {
       ApiEndpoints.register,
       data: request.toJson(),
     );
-    return response.data;
+    return _asMap(response.data);
   }
 
-  Future<Map<String, dynamic>> loginWithGoogle(String codeOrEmail) async {
+  /// Mobile Google login accepts only an ID token issued by Google Sign-In.
+  /// An email address is never treated as a credential.
+  Future<Map<String, dynamic>> loginWithGoogleIdToken(String idToken) async {
     final response = await _dio.post(
       ApiEndpoints.googleAuth,
       data: {
-        'code': codeOrEmail,
-        'redirectUri': 'http://localhost:5173',
+        'idToken': idToken,
       },
     );
-    return response.data;
+    return _asMap(response.data);
+  }
+
+  Future<void> logout(String? refreshToken) async {
+    await _dio.post(
+      ApiEndpoints.logout,
+      data: refreshToken == null || refreshToken.isEmpty
+          ? null
+          : {'refreshToken': refreshToken},
+    );
   }
 
   Future<UserModel> getMe() async {
     final response = await _dio.get(ApiEndpoints.me);
-    return UserModel.fromJson(response.data);
+    return UserModel.fromJson(_asMap(response.data));
   }
 
   Future<UserModel> updateProfile({
@@ -62,11 +72,17 @@ class AuthApiService {
         'dateOfBirth': dateOfBirth,
       },
     );
-    final data = response.data;
-    if (data != null && data['user'] != null) {
-      return UserModel.fromJson(data['user'] as Map<String, dynamic>);
+    final data = _asMap(response.data);
+    final rawUser = data['user'];
+    if (rawUser is Map<String, dynamic>) {
+      return UserModel.fromJson(rawUser);
     }
-    return await getMe();
+    if (rawUser is Map) {
+      return UserModel.fromJson(
+        rawUser.map((key, value) => MapEntry(key.toString(), value)),
+      );
+    }
+    return getMe();
   }
 
   Future<void> changePassword({
@@ -82,5 +98,13 @@ class AuthApiService {
         'confirmPassword': confirmPassword,
       },
     );
+  }
+
+  Map<String, dynamic> _asMap(dynamic value) {
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) {
+      return value.map((key, item) => MapEntry(key.toString(), item));
+    }
+    throw const FormatException('The server returned an invalid response.');
   }
 }

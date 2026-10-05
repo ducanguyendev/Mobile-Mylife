@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../shared/api/api_error.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/widgets/glass_container.dart';
+import '../../auth/models/user_model.dart';
 import '../models/admin_stats_model.dart';
 import '../models/admin_user_model.dart';
 import '../services/admin_api_service.dart';
@@ -17,6 +19,8 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
   AdminStatsModel? _stats;
   List<AdminUserModel> _users = [];
   bool _isLoading = true;
+  String? _errorMessage;
+  final Set<int> _pendingUserIds = <int>{};
   final _searchController = TextEditingController();
 
   @override
@@ -25,35 +29,60 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     _fetchData();
   }
 
-  Future<void> _fetchData() async {
-    setState(() => _isLoading = true);
+  Future<void> _fetchData({bool showLoading = true}) async {
+    if (mounted && showLoading) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
     try {
       final adminService = ref.read(adminApiServiceProvider);
       final stats = await adminService.getStats();
       final users = await adminService.getUsers(search: _searchController.text.trim());
+      if (!mounted) return;
       setState(() {
         _stats = stats;
         _users = users;
       });
-    } catch (_) {}
-    setState(() => _isLoading = false);
+    } catch (error, stackTrace) {
+      debugPrint('Admin data load failed: $error\n$stackTrace');
+      if (mounted) {
+        setState(() => _errorMessage = ApiError.message(
+              error,
+              fallback: 'Unable to load administrator data. Please try again.',
+            ));
+      }
+    } finally {
+      if (mounted && showLoading) setState(() => _isLoading = false);
+    }
   }
 
   Future<void> _toggleStatus(AdminUserModel user) async {
+    _setUserPending(user.id, true);
     try {
       final adminService = ref.read(adminApiServiceProvider);
       await adminService.toggleUserStatus(user.id, !user.isActive);
-      _fetchData();
-    } catch (_) {}
+      await _fetchData(showLoading: false);
+    } catch (error, stackTrace) {
+      _showActionError('update this account status', error, stackTrace);
+    } finally {
+      _setUserPending(user.id, false);
+    }
   }
 
   Future<void> _changeRole(AdminUserModel user) async {
-    final nextRole = user.role == 'Admin' ? 'Member' : 'Admin';
+    final nextRole = user.isAdmin ? UserModel.roleUser : UserModel.roleAdmin;
+    _setUserPending(user.id, true);
     try {
       final adminService = ref.read(adminApiServiceProvider);
       await adminService.changeUserRole(user.id, nextRole);
-      _fetchData();
-    } catch (_) {}
+      await _fetchData(showLoading: false);
+    } catch (error, stackTrace) {
+      _showActionError('change this account role', error, stackTrace);
+    } finally {
+      _setUserPending(user.id, false);
+    }
   }
 
   Future<void> _deleteUser(AdminUserModel user) async {
@@ -74,12 +103,48 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
     );
 
     if (confirm == true) {
+      _setUserPending(user.id, true);
       try {
         final adminService = ref.read(adminApiServiceProvider);
         await adminService.deleteUser(user.id);
-        _fetchData();
-      } catch (_) {}
+        await _fetchData(showLoading: false);
+      } catch (error, stackTrace) {
+        _showActionError('delete this account', error, stackTrace);
+      } finally {
+        _setUserPending(user.id, false);
+      }
     }
+  }
+
+  void _setUserPending(int id, bool isPending) {
+    if (!mounted) return;
+    setState(() {
+      if (isPending) {
+        _pendingUserIds.add(id);
+      } else {
+        _pendingUserIds.remove(id);
+      }
+    });
+  }
+
+  void _showActionError(String action, Object error, StackTrace stackTrace) {
+    debugPrint('Unable to $action: $error\n$stackTrace');
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: AppColors.error,
+        content: Text(ApiError.message(
+          error,
+          fallback: 'Unable to $action. Please try again.',
+        )),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -101,6 +166,28 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  if (_errorMessage != null) ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.error.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.error),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.error_outline, color: AppColors.error),
+                          const SizedBox(width: 8),
+                          Expanded(child: Text(_errorMessage!)),
+                          TextButton(
+                            onPressed: _fetchData,
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                   // Stat Cards Grid
                   if (_stats != null) ...[
                     Row(
@@ -170,11 +257,11 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                   decoration: BoxDecoration(
-                                    color: u.role == 'Admin' ? AppColors.accentCyan.withValues(alpha: 0.2) : AppColors.surfaceBg,
+                                    color: u.isAdmin ? AppColors.accentCyan.withValues(alpha: 0.2) : AppColors.surfaceBg,
                                     borderRadius: BorderRadius.circular(6),
-                                    border: Border.all(color: u.role == 'Admin' ? AppColors.accentCyan : AppColors.borderSubtle),
+                                    border: Border.all(color: u.isAdmin ? AppColors.accentCyan : AppColors.borderSubtle),
                                   ),
-                                  child: Text(u.role, style: TextStyle(color: u.role == 'Admin' ? AppColors.accentCyanLight : AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.bold)),
+                                  child: Text(u.role, style: TextStyle(color: u.isAdmin ? AppColors.accentCyanLight : AppColors.textSecondary, fontSize: 11, fontWeight: FontWeight.bold)),
                                 ),
                               ],
                             ),
@@ -189,22 +276,22 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen> {
                                     foregroundColor: u.isActive ? AppColors.warning : AppColors.success,
                                     side: BorderSide(color: u.isActive ? AppColors.warning : AppColors.success),
                                   ),
-                                  onPressed: () => _toggleStatus(u),
+                                  onPressed: _pendingUserIds.contains(u.id) ? null : () => _toggleStatus(u),
                                 ),
                                 const SizedBox(width: 8),
                                 OutlinedButton.icon(
                                   icon: const Icon(Icons.swap_horiz, size: 16),
-                                  label: Text(u.role == 'Admin' ? 'Gỡ Admin' : 'Lên Admin', style: const TextStyle(fontSize: 12)),
+                                  label: Text(u.isAdmin ? 'Gỡ Admin' : 'Lên Admin', style: const TextStyle(fontSize: 12)),
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: AppColors.accentCyan,
                                     side: const BorderSide(color: AppColors.accentCyan),
                                   ),
-                                  onPressed: () => _changeRole(u),
+                                  onPressed: _pendingUserIds.contains(u.id) ? null : () => _changeRole(u),
                                 ),
                                 const SizedBox(width: 8),
                                 IconButton(
                                   icon: const Icon(Icons.delete_outline, color: AppColors.error, size: 20),
-                                  onPressed: () => _deleteUser(u),
+                                  onPressed: _pendingUserIds.contains(u.id) ? null : () => _deleteUser(u),
                                 ),
                               ],
                             ),

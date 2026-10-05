@@ -1,30 +1,34 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:mobile_mylife/main.dart';
+import 'package:mobile_mylife/features/admin/models/admin_user_model.dart';
+import 'package:mobile_mylife/features/auth/models/user_model.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyLifeApp());
+  test('parses backend user IDs and provider flags safely', () {
+    final user = UserModel.fromJson({
+      'id': 42,
+      'email': 'admin@example.com',
+      'role': 'ADMIN',
+      'loginProviders': {'local': true, 'google': true},
+    });
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(user.id, 42);
+    expect(user.role, UserModel.roleAdmin);
+    expect(user.isAdmin, isTrue);
+    expect(user.hasLocalLogin, isTrue);
+    expect(user.hasGoogleLogin, isTrue);
+  });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+  test('normalizes admin users to integer IDs and API roles', () {
+    final user = AdminUserModel.fromJson({
+      'id': '7',
+      'email': 'member@example.com',
+      'role': 'Member',
+      'isActive': true,
+      'createdAt': '2026-01-01T00:00:00Z',
+    });
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(user.id, 7);
+    expect(user.role, UserModel.roleUser);
+    expect(user.isAdmin, isFalse);
   });
 }

@@ -14,9 +14,11 @@ class HeroSection extends ConsumerWidget {
     final themeMode = ref.watch(themeModeProvider);
     final isDark = themeMode == ThemeMode.dark;
 
-    final accentColor = isDark ? AppColors.accentGold : AppColors.accentGoldLightMode;
+    final accentColor =
+        isDark ? AppColors.accentGold : AppColors.accentGoldLightMode;
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF1E293B);
-    final secondaryTextColor = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final secondaryTextColor =
+        isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
 
     return GlassContainer(
       padding: const EdgeInsets.all(22),
@@ -44,7 +46,9 @@ class HeroSection extends ConsumerWidget {
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => CircleAvatar(
                   radius: 60,
-                  backgroundColor: isDark ? AppColors.secondaryBg : AppColors.secondaryBgLight,
+                  backgroundColor: isDark
+                      ? AppColors.secondaryBg
+                      : AppColors.secondaryBgLight,
                   child: Icon(Icons.person, size: 50, color: accentColor),
                 ),
               ),
@@ -54,7 +58,8 @@ class HeroSection extends ConsumerWidget {
 
           Text(
             lang.tr('hero_greet'),
-            style: TextStyle(color: secondaryTextColor, fontSize: 13, letterSpacing: 1),
+            style: TextStyle(
+                color: secondaryTextColor, fontSize: 13, letterSpacing: 1),
           ),
           const SizedBox(height: 4),
 
@@ -84,10 +89,11 @@ class HeroSection extends ConsumerWidget {
           Text(
             lang.tr('hero_desc'),
             textAlign: TextAlign.center,
-            style: TextStyle(color: secondaryTextColor, fontSize: 13, height: 1.5),
+            style:
+                TextStyle(color: secondaryTextColor, fontSize: 13, height: 1.5),
           ),
           const SizedBox(height: 20),
-          
+
           // Action button
           SizedBox(
             width: double.infinity,
@@ -95,9 +101,10 @@ class HeroSection extends ConsumerWidget {
               onPressed: () {
                 // Scroll to contact or perform action
               },
-              icon: Icon(Icons.arrow_forward_ios, size: 14, color: isDark ? Colors.black : Colors.white),
+              icon: Icon(Icons.arrow_forward_ios,
+                  size: 14, color: isDark ? Colors.black : Colors.white),
               label: Text(
-                lang.tr('home.btnContact') ?? 'Contact',
+                lang.tr('home.btnContact'),
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: isDark ? Colors.black : Colors.white,
@@ -106,7 +113,8 @@ class HeroSection extends ConsumerWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: isDark ? accentColor : Colors.black,
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
               ),
             ),
           ),
@@ -116,12 +124,19 @@ class HeroSection extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
             decoration: BoxDecoration(
-              color: isDark ? AppColors.surfaceBg.withValues(alpha: 0.6) : AppColors.cardBgLight,
+              color: isDark
+                  ? AppColors.surfaceBg.withValues(alpha: 0.6)
+                  : AppColors.cardBgLight,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: isDark ? AppColors.borderSubtle : AppColors.borderSubtleLight),
+              border: Border.all(
+                  color: isDark
+                      ? AppColors.borderSubtle
+                      : AppColors.borderSubtleLight),
               boxShadow: [
                 BoxShadow(
-                  color: isDark ? Colors.black.withValues(alpha: 0.2) : Colors.black.withValues(alpha: 0.04),
+                  color: isDark
+                      ? Colors.black.withValues(alpha: 0.2)
+                      : Colors.black.withValues(alpha: 0.04),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -132,12 +147,18 @@ class HeroSection extends ConsumerWidget {
                 Expanded(
                   child: Column(
                     children: [
-                      Text(lang.tr('stats_exp_val'), style: TextStyle(color: accentColor, fontWeight: FontWeight.bold, fontSize: 18)),
+                      Text(lang.tr('stats_exp_val'),
+                          style: TextStyle(
+                              color: accentColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18)),
                       const SizedBox(height: 2),
                       Text(
                         lang.tr('stats_exp_lbl'),
                         style: TextStyle(
-                          color: isDark ? AppColors.textMuted : AppColors.textSecondaryLight,
+                          color: isDark
+                              ? AppColors.textMuted
+                              : AppColors.textSecondaryLight,
                           fontSize: 9,
                           fontWeight: FontWeight.bold,
                         ),
@@ -145,16 +166,26 @@ class HeroSection extends ConsumerWidget {
                     ],
                   ),
                 ),
-                VerticalDivider(color: isDark ? AppColors.borderSubtle : AppColors.borderSubtleLight, width: 1),
+                VerticalDivider(
+                    color: isDark
+                        ? AppColors.borderSubtle
+                        : AppColors.borderSubtleLight,
+                    width: 1),
                 Expanded(
                   child: Column(
                     children: [
-                      Text(lang.tr('stats_proj_val'), style: TextStyle(color: accentColor, fontWeight: FontWeight.bold, fontSize: 18)),
+                      Text(lang.tr('stats_proj_val'),
+                          style: TextStyle(
+                              color: accentColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18)),
                       const SizedBox(height: 2),
                       Text(
                         lang.tr('stats_proj_lbl'),
                         style: TextStyle(
-                          color: isDark ? AppColors.textMuted : AppColors.textSecondaryLight,
+                          color: isDark
+                              ? AppColors.textMuted
+                              : AppColors.textSecondaryLight,
                           fontSize: 9,
                           fontWeight: FontWeight.bold,
                         ),
@@ -162,16 +193,26 @@ class HeroSection extends ConsumerWidget {
                     ],
                   ),
                 ),
-                VerticalDivider(color: isDark ? AppColors.borderSubtle : AppColors.borderSubtleLight, width: 1),
+                VerticalDivider(
+                    color: isDark
+                        ? AppColors.borderSubtle
+                        : AppColors.borderSubtleLight,
+                    width: 1),
                 Expanded(
                   child: Column(
                     children: [
-                      Text(lang.tr('stats_clients_val'), style: TextStyle(color: accentColor, fontWeight: FontWeight.bold, fontSize: 18)),
+                      Text(lang.tr('stats_clients_val'),
+                          style: TextStyle(
+                              color: accentColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18)),
                       const SizedBox(height: 2),
                       Text(
                         lang.tr('stats_clients_lbl'),
                         style: TextStyle(
-                          color: isDark ? AppColors.textMuted : AppColors.textSecondaryLight,
+                          color: isDark
+                              ? AppColors.textMuted
+                              : AppColors.textSecondaryLight,
                           fontSize: 9,
                           fontWeight: FontWeight.bold,
                         ),
