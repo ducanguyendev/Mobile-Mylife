@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/l10n/app_language_provider.dart';
 import '../../../shared/l10n/app_strings.dart';
@@ -79,6 +80,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           );
 
       if (success && mounted) {
+        TextInput.finishAutofillContext(shouldSave: true);
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -140,7 +142,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           );
         } else {
           final error = ref.read(authStateProvider).errorMessage ??
-              (lang == 'vi' ? 'Đăng nhập Google thất bại' : 'Google sign-in failed');
+              (lang == 'vi'
+                  ? 'Đăng nhập Google thất bại'
+                  : 'Google sign-in failed');
           scaffold.showSnackBar(
             SnackBar(
               backgroundColor: AppColors.error,
@@ -159,7 +163,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     ref.listen<AuthState>(authStateProvider, (previous, next) {
-      if (next.errorMessage != null && next.errorMessage != previous?.errorMessage) {
+      if (next.errorMessage != null &&
+          next.errorMessage != previous?.errorMessage) {
         _startErrorTimer();
       }
     });
@@ -170,244 +175,271 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final lang = ref.watch(languageProvider);
 
     final inputBg = isDark ? AppColors.primaryBg : AppColors.primaryBgLight;
-    final borderColor = isDark ? AppColors.borderSubtle : AppColors.borderSubtleLight;
-    final textPrimary = isDark ? AppColors.textPrimary : AppColors.textPrimaryLight;
-    final textSecondary = isDark ? AppColors.textSecondary : AppColors.textSecondaryLight;
-    final accentColor = isDark ? AppColors.accentGold : AppColors.accentGoldLightMode;
+    final borderColor =
+        isDark ? AppColors.borderSubtle : AppColors.borderSubtleLight;
+    final textPrimary =
+        isDark ? AppColors.textPrimary : AppColors.textPrimaryLight;
+    final textSecondary =
+        isDark ? AppColors.textSecondary : AppColors.textSecondaryLight;
+    final accentColor =
+        isDark ? AppColors.accentGold : AppColors.accentGoldLightMode;
     final btnTextColor = isDark ? AppColors.primaryBg : Colors.white;
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF000000) : const Color(0xFFF3F4F6),
+      backgroundColor:
+          isDark ? const Color(0xFF000000) : const Color(0xFFF3F4F6),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-            child: AuthCardContainer(
-              formKey: _formKey,
-              headerIcon: Icons.verified_user_outlined,
-              title: AppStrings.get('login_title', lang),
-              subtitle: AppStrings.get('login_subtitle', lang),
-              errorBanner: authState.errorMessage != null
-                  ? AuthErrorBanner(errorMessage: authState.errorMessage!)
-                  : null,
-              children: [
-                // Email Label
-                Text(
-                  AppStrings.get('lbl_email_upper', lang),
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.8,
-                    color: textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-
-                // Email Input Field
-                TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  style: TextStyle(color: textPrimary, fontSize: 14),
-                  validator: Validators.validateEmail,
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: inputBg,
-                    prefixIcon: Icon(
-                      Icons.mail_outline_rounded,
-                      size: 19,
+            child: AutofillGroup(
+              child: AuthCardContainer(
+                formKey: _formKey,
+                headerIcon: Icons.verified_user_outlined,
+                title: AppStrings.get('login_title', lang),
+                subtitle: AppStrings.get('login_subtitle', lang),
+                errorBanner: authState.errorMessage != null
+                    ? AuthErrorBanner(errorMessage: authState.errorMessage!)
+                    : null,
+                children: [
+                  // Email Label
+                  Text(
+                    AppStrings.get('lbl_email_upper', lang),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8,
                       color: textSecondary,
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: borderColor, width: 1),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: borderColor, width: 1),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: accentColor, width: 1.5),
-                    ),
                   ),
-                ),
-                const SizedBox(height: 18),
+                  const SizedBox(height: 8),
 
-                // Password Label
-                Text(
-                  AppStrings.get('lbl_password_upper', lang),
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.8,
-                    color: textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 8),
-
-                // Password Input Field
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: _obscurePassword,
-                  style: TextStyle(color: textPrimary, fontSize: 14),
-                  validator: Validators.validatePassword,
-                  decoration: InputDecoration(
-                    filled: true,
-                    fillColor: inputBg,
-                    prefixIcon: Icon(
-                      Icons.lock_outline_rounded,
-                      size: 19,
-                      color: textSecondary,
-                    ),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                  // Email Input Field
+                  TextFormField(
+                    controller: _emailController,
+                    keyboardType: TextInputType.emailAddress,
+                    autofillHints: const [
+                      AutofillHints.username,
+                      AutofillHints.email,
+                    ],
+                    style: TextStyle(color: textPrimary, fontSize: 14),
+                    validator: Validators.validateEmail,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: inputBg,
+                      prefixIcon: Icon(
+                        Icons.mail_outline_rounded,
                         size: 19,
                         color: textSecondary,
                       ),
-                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: borderColor, width: 1),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: borderColor, width: 1),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: accentColor, width: 1.5),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 14),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: borderColor, width: 1),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: borderColor, width: 1),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: accentColor, width: 1.5),
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 12),
+                  const SizedBox(height: 18),
 
-                // Remember Me Checkbox
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () async {
-                    final newVal = !_rememberMe;
-                    setState(() => _rememberMe = newVal);
-                    if (!newVal) {
-                      await ref.read(tokenStorageServiceProvider).clearRememberedEmail();
-                    }
-                  },
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: Checkbox(
-                          value: _rememberMe,
-                          activeColor: accentColor,
-                          checkColor: isDark ? Colors.black : Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                          side: BorderSide(color: borderColor, width: 1.2),
-                          onChanged: (val) async {
-                            final newVal = val ?? false;
-                            setState(() => _rememberMe = newVal);
-                            if (!newVal) {
-                              await ref.read(tokenStorageServiceProvider).clearRememberedEmail();
-                            }
-                          },
+                  // Password Label
+                  Text(
+                    AppStrings.get('lbl_password_upper', lang),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8,
+                      color: textSecondary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  // Password Input Field
+                  TextFormField(
+                    controller: _passwordController,
+                    obscureText: _obscurePassword,
+                    autofillHints: const [AutofillHints.password],
+                    style: TextStyle(color: textPrimary, fontSize: 14),
+                    validator: Validators.validatePassword,
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: inputBg,
+                      prefixIcon: Icon(
+                        Icons.lock_outline_rounded,
+                        size: 19,
+                        color: textSecondary,
+                      ),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _obscurePassword
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                          size: 19,
+                          color: textSecondary,
+                        ),
+                        onPressed: () => setState(
+                            () => _obscurePassword = !_obscurePassword),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 14),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: borderColor, width: 1),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: borderColor, width: 1),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: accentColor, width: 1.5),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Remember Me Checkbox
+                  GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () async {
+                      final newVal = !_rememberMe;
+                      setState(() => _rememberMe = newVal);
+                      if (!newVal) {
+                        await ref
+                            .read(tokenStorageServiceProvider)
+                            .clearRememberedEmail();
+                      }
+                    },
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: Checkbox(
+                            value: _rememberMe,
+                            activeColor: accentColor,
+                            checkColor: isDark ? Colors.black : Colors.white,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(4)),
+                            side: BorderSide(color: borderColor, width: 1.2),
+                            onChanged: (val) async {
+                              final newVal = val ?? false;
+                              setState(() => _rememberMe = newVal);
+                              if (!newVal) {
+                                await ref
+                                    .read(tokenStorageServiceProvider)
+                                    .clearRememberedEmail();
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          AppStrings.get('remember_password', lang),
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Login Button
+                  SizedBox(
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: authState.status == AuthStatus.loading
+                          ? null
+                          : () => _handleLogin(lang),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: accentColor,
+                        foregroundColor: btnTextColor,
+                        elevation: 2,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      child: authState.status == AuthStatus.loading
+                          ? SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(btnTextColor),
+                              ),
+                            )
+                          : Text(
+                              AppStrings.get('login_title', lang),
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: btnTextColor,
+                              ),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Divider "hoặc đăng nhập bằng"
+                  AuthDivider(text: AppStrings.get('or_login_with', lang)),
+                  const SizedBox(height: 16),
+
+                  // Google Sign-In Button
+                  GoogleSignInButton(
+                    isLoading: _isGoogleLoading,
+                    onPressed: _isGoogleLoading ||
+                            authState.status == AuthStatus.loading
+                        ? null
+                        : () => _handleGoogleLogin(lang),
+                    label: AppStrings.get('login_with_google', lang),
+                    loadingLabel: lang == 'vi'
+                        ? 'Đang kết nối Google...'
+                        : 'Connecting to Google...',
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Register Link
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
                       Text(
-                        AppStrings.get('remember_password', lang),
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: textSecondary,
+                        AppStrings.get('no_account_prompt', lang),
+                        style: TextStyle(fontSize: 13, color: textSecondary),
+                      ),
+                      const SizedBox(width: 6),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const RegisterScreen()),
+                          );
+                        },
+                        child: Text(
+                          AppStrings.get('register_now', lang),
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                            color: accentColor,
+                          ),
                         ),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 20),
-
-                // Login Button
-                SizedBox(
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: authState.status == AuthStatus.loading
-                        ? null
-                        : () => _handleLogin(lang),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: accentColor,
-                      foregroundColor: btnTextColor,
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: authState.status == AuthStatus.loading
-                        ? SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(btnTextColor),
-                            ),
-                          )
-                        : Text(
-                            AppStrings.get('login_title', lang),
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: btnTextColor,
-                            ),
-                          ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Divider "hoặc đăng nhập bằng"
-                AuthDivider(text: AppStrings.get('or_login_with', lang)),
-                const SizedBox(height: 16),
-
-                // Google Sign-In Button
-                GoogleSignInButton(
-                  isLoading: _isGoogleLoading,
-                  onPressed: _isGoogleLoading || authState.status == AuthStatus.loading
-                      ? null
-                      : () => _handleGoogleLogin(lang),
-                  label: AppStrings.get('login_with_google', lang),
-                  loadingLabel: lang == 'vi' ? 'Đang kết nối Google...' : 'Connecting to Google...',
-                ),
-                const SizedBox(height: 20),
-
-                // Register Link
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      AppStrings.get('no_account_prompt', lang),
-                      style: TextStyle(fontSize: 13, color: textSecondary),
-                    ),
-                    const SizedBox(width: 6),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(builder: (_) => const RegisterScreen()),
-                        );
-                      },
-                      child: Text(
-                        AppStrings.get('register_now', lang),
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          color: accentColor,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

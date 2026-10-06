@@ -42,8 +42,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
 
   Future<void> _pickAndUploadAvatar(String lang) async {
     final picker = ImagePicker();
-    final picked =
-        await picker.pickImage(source: ImageSource.gallery, imageQuality: 85);
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 82,
+    );
 
     if (picked != null) {
       setState(() => _isUploading = true);
@@ -52,7 +56,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
         final url = await avatarService.uploadAvatar(File(picked.path));
         if (url != null) {
           ref.read(authStateProvider.notifier).updateAvatarLocally(url);
-          await ref.read(authStateProvider.notifier).checkAuth();
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
