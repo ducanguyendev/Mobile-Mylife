@@ -24,7 +24,7 @@ class _FamilyTreeScreenState extends ConsumerState<FamilyTreeScreen> {
   final _search = TextEditingController();
   String _query = '';
   int? _generation;
-  bool _graphView = false;
+  bool _cardView = false;
   final Map<int, Future<Uint8List>> _avatarFutures = {};
 
   @override
@@ -203,128 +203,141 @@ class _FamilyTreeScreenState extends ConsumerState<FamilyTreeScreen> {
         Expanded(child: Text(value?.isNotEmpty == true ? value! : '—'))
       ]));
 
-  List<FamilyMember> _rootMembers(List<FamilyMember> members) {
-    final memberIds = members.map((member) => member.id).toSet();
-    final roots = members.where((member) {
-      final hasKnownFather =
-          member.fatherId != null && memberIds.contains(member.fatherId);
-      final hasKnownMother =
-          member.motherId != null && memberIds.contains(member.motherId);
-      return !hasKnownFather && !hasKnownMother;
-    }).toList(growable: false);
-
-    // A malformed legacy graph should still remain inspectable rather than
-    // rendering a blank page. The recursive renderer below also guards loops.
-    return roots.isEmpty ? members : roots;
-  }
-
-  List<FamilyMember> _childrenOf(
-    FamilyMember parent,
-    List<FamilyMember> allMembers,
-    Set<int> ancestors,
-  ) {
-    return allMembers.where((candidate) {
-      if (ancestors.contains(candidate.id)) return false;
-      return candidate.fatherId == parent.id ||
-          candidate.motherId == parent.id ||
-          parent.childIds.contains(candidate.id);
-    }).toList(growable: false);
-  }
-
-  Widget _buildTreeNodes(
-    List<FamilyMember> members,
-    List<FamilyMember> allMembers,
-    bool isDark, {
-    required Set<int> ancestors,
-  }) {
-    if (members.isEmpty) return const SizedBox.shrink();
-
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: members.length,
-      itemBuilder: (context, index) {
-        final member = members[index];
-        final memberAncestors = {...ancestors, member.id};
-        final children = _childrenOf(member, allMembers, memberAncestors);
-
-        return Theme(
-          data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-          child: ExpansionTile(
-            title: Text(
-              member.fullName,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: isDark ? Colors.white : Colors.black,
-              ),
-            ),
-            subtitle: _memberSubtitle(member, isDark),
-            leading: _memberAvatar(member, isDark),
-            childrenPadding: const EdgeInsets.only(left: 20),
-            children: [
-              if (children.isNotEmpty)
-                _buildTreeNodes(
-                  children,
-                  allMembers,
-                  isDark,
-                  ancestors: memberAncestors,
-                ),
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 4,
-                  children: [
-                    TextButton.icon(
-                      onPressed: () => _showMemberForm(parentMember: member),
-                      icon: const Icon(Icons.add, size: 16),
-                      label: const Text('Thêm con'),
-                    ),
-                    TextButton.icon(
-                        onPressed: () => _showDetails(member),
-                        icon: const Icon(Icons.info_outline, size: 16),
-                        label: Text(
-                            Localizations.localeOf(context).languageCode == 'vi'
-                                ? 'Chi tiết'
-                                : 'Details')),
-                    TextButton.icon(
-                      onPressed: () => _showMemberForm(member: member),
-                      icon: const Icon(Icons.edit, size: 16),
-                      label: const Text('Sửa'),
-                      style:
-                          TextButton.styleFrom(foregroundColor: Colors.orange),
-                    ),
-                    TextButton.icon(
-                      onPressed: () => _confirmDelete(member),
-                      icon: const Icon(Icons.delete_outline, size: 16),
-                      label: const Text('Xóa'),
-                      style: TextButton.styleFrom(
-                          foregroundColor: AppColors.error),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      },
+  Widget _memberListItem(FamilyMember member, bool isDark, bool vi) {
+    final secondary =
+        isDark ? AppColors.textSecondary : AppColors.textSecondaryLight;
+    final parents = [member.fatherName, member.motherName]
+        .where((name) => name?.isNotEmpty == true)
+        .join(' · ');
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => _showDetails(member),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(children: [
+            _memberAvatar(member, isDark, radius: 26),
+            const SizedBox(width: 12),
+            Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                  Text(member.fullName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w700, fontSize: 16)),
+                  const SizedBox(height: 4),
+                  Text(
+                      [
+                        if (member.role?.isNotEmpty == true) member.role!,
+                        '${vi ? 'Đời' : 'Gen.'} ${member.generation}',
+                        if (member.dateOfBirth?.isNotEmpty == true)
+                          member.dateOfBirth!
+                      ].join(' · '),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(color: secondary, fontSize: 12)),
+                  if (parents.isNotEmpty)
+                    Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text('${vi ? 'Cha mẹ' : 'Parents'}: $parents',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(color: secondary, fontSize: 12))),
+                ])),
+            PopupMenuButton<String>(
+                onSelected: (action) {
+                  if (action == 'edit') _showMemberForm(member: member);
+                  if (action == 'delete') _confirmDelete(member);
+                },
+                itemBuilder: (_) => [
+                      PopupMenuItem(
+                          value: 'edit', child: Text(vi ? 'Sửa' : 'Edit')),
+                      PopupMenuItem(
+                          value: 'delete', child: Text(vi ? 'Xóa' : 'Delete'))
+                    ]),
+          ]),
+        ),
+      ),
     );
   }
 
-  Widget? _memberSubtitle(FamilyMember member, bool isDark) {
-    final details = <String>[
-      if (member.role?.isNotEmpty == true) member.role!,
-      'Đời ${member.generation}',
-      if (member.dateOfBirth?.isNotEmpty == true) member.dateOfBirth!,
-    ];
-    if (details.isEmpty) return null;
-    return Text(
-      details.join(' • '),
-      style: TextStyle(
-        color: isDark ? AppColors.accentGold : AppColors.accentGoldLightMode,
-        fontSize: 12,
-      ),
+  Widget _memberCard(FamilyMember member, bool isDark, bool vi) {
+    final secondary =
+        isDark ? AppColors.textSecondary : AppColors.textSecondaryLight;
+    final parents = [member.fatherName, member.motherName]
+        .where((name) => name?.isNotEmpty == true)
+        .join(' · ');
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+          onTap: () => _showDetails(member),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child:
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Row(children: [
+                _memberAvatar(member, isDark, radius: 27),
+                const Spacer(),
+                Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+                    decoration: BoxDecoration(
+                        color: (isDark
+                                ? AppColors.accentGold
+                                : AppColors.accentGoldLightMode)
+                            .withValues(alpha: .15),
+                        borderRadius: BorderRadius.circular(20)),
+                    child: Text('${vi ? 'Đời' : 'Gen.'} ${member.generation}',
+                        style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: isDark
+                                ? AppColors.accentGold
+                                : AppColors.accentGoldLightMode)))
+              ]),
+              const SizedBox(height: 12),
+              Text(member.fullName,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w700, fontSize: 16)),
+              if (member.role?.isNotEmpty == true)
+                Padding(
+                    padding: const EdgeInsets.only(top: 3),
+                    child: Text(member.role!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: secondary))),
+              const SizedBox(height: 10),
+              if (parents.isNotEmpty)
+                Text('${vi ? 'Cha mẹ' : 'Parents'}: $parents',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(color: secondary, fontSize: 12)),
+              const Spacer(),
+              Row(children: [
+                Icon(Icons.child_care_outlined, size: 16, color: secondary),
+                const SizedBox(width: 5),
+                Text('${member.childIds.length} ${vi ? 'con' : 'children'}',
+                    style: TextStyle(color: secondary, fontSize: 12)),
+                const Spacer(),
+                IconButton(
+                    visualDensity: VisualDensity.compact,
+                    tooltip: vi ? 'Sửa' : 'Edit',
+                    onPressed: () => _showMemberForm(member: member),
+                    icon: const Icon(Icons.edit_outlined, size: 19)),
+                IconButton(
+                    visualDensity: VisualDensity.compact,
+                    tooltip: vi ? 'Xóa' : 'Delete',
+                    onPressed: () => _confirmDelete(member),
+                    icon: const Icon(Icons.delete_outline,
+                        size: 19, color: AppColors.error))
+              ]),
+            ]),
+          )),
     );
   }
 
@@ -452,7 +465,7 @@ class _FamilyTreeScreenState extends ConsumerState<FamilyTreeScreen> {
                     .toLowerCase()
                     .contains(_query.toLowerCase())))
         .toList();
-    final roots = _rootMembers(matching);
+
     return RefreshIndicator(
       onRefresh: () => ref.read(familyTreeProvider.notifier).refresh(),
       child: SingleChildScrollView(
@@ -494,11 +507,12 @@ class _FamilyTreeScreenState extends ConsumerState<FamilyTreeScreen> {
                       ],
                       onChanged: (v) => setState(() => _generation = v))),
               IconButton(
-                  tooltip: _graphView ? 'List view' : 'Graph view',
-                  onPressed: () => setState(() => _graphView = !_graphView),
-                  icon: Icon(_graphView
-                      ? Icons.view_list
-                      : Icons.account_tree_outlined))
+                  tooltip: _cardView
+                      ? (vi ? 'Dạng danh sách' : 'List view')
+                      : (vi ? 'Dạng thẻ' : 'Card view'),
+                  onPressed: () => setState(() => _cardView = !_cardView),
+                  icon: Icon(
+                      _cardView ? Icons.view_list : Icons.grid_view_rounded))
             ]),
             if (familyTree.isLoading || familyTree.isMutating)
               const Padding(
@@ -507,93 +521,47 @@ class _FamilyTreeScreenState extends ConsumerState<FamilyTreeScreen> {
               ),
             if (familyTree.members.isEmpty)
               _emptyTree(isDark)
-            else if (_graphView)
-              _buildGraph(matching, isDark)
+            else if (_cardView)
+              _buildCards(matching, isDark, vi)
             else
-              _buildTreeNodes(
-                roots,
-                matching,
-                isDark,
-                ancestors: const <int>{},
-              ),
+              ...matching.map((member) => _memberListItem(member, isDark, vi))
           ],
         ),
       ),
     );
   }
 
-  Widget _buildGraph(List<FamilyMember> members, bool isDark) {
-    final generations = members.map((m) => m.generation).toSet().toList()
-      ..sort();
-    if (members.isEmpty) return const SizedBox.shrink();
-    return SizedBox(
-        height: 520,
-        child: InteractiveViewer(
-            minScale: .35,
-            maxScale: 2.5,
-            constrained: false,
-            child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: generations
-                    .map((g) => Padding(
-                        padding: const EdgeInsets.only(bottom: 14),
-                        child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              SizedBox(
-                                  width: 76,
-                                  child: Padding(
-                                      padding: const EdgeInsets.only(top: 18),
-                                      child: Text(
-                                          '${Localizations.localeOf(context).languageCode == 'vi' ? 'Đời' : 'Gen.'} $g',
-                                          style: const TextStyle(
-                                              fontWeight: FontWeight.bold)))),
-                              ...members.where((m) => m.generation == g).map(
-                                  (m) => SizedBox(
-                                      width: 158,
-                                      child: Card(
-                                          child: InkWell(
-                                              onTap: () => _showDetails(m),
-                                              child: Padding(
-                                                  padding:
-                                                      const EdgeInsets.all(10),
-                                                  child: Column(children: [
-                                                    _memberAvatar(m, isDark,
-                                                        radius: 25),
-                                                    const SizedBox(height: 6),
-                                                    Text(m.fullName,
-                                                        textAlign:
-                                                            TextAlign.center,
-                                                        maxLines: 2,
-                                                        overflow: TextOverflow
-                                                            .ellipsis),
-                                                    Text(m.role ?? '',
-                                                        maxLines: 1,
-                                                        overflow: TextOverflow
-                                                            .ellipsis),
-                                                    if (m.fatherName != null ||
-                                                        m.motherName != null)
-                                                      Text(
-                                                          '↑ ${m.fatherName ?? ''} ${m.motherName ?? ''}',
-                                                          maxLines: 1,
-                                                          overflow: TextOverflow
-                                                              .ellipsis,
-                                                          style:
-                                                              const TextStyle(
-                                                                  fontSize:
-                                                                      10)),
-                                                    if (m.childNames.isNotEmpty)
-                                                      Text(
-                                                          '↓ ${m.childNames.join(', ')}',
-                                                          maxLines: 1,
-                                                          overflow: TextOverflow
-                                                              .ellipsis,
-                                                          style:
-                                                              const TextStyle(
-                                                                  fontSize: 10))
-                                                  ]))))))
-                            ])))
-                    .toList())));
+  Widget _buildCards(List<FamilyMember> members, bool isDark, bool vi) {
+    final generations =
+        members.map((member) => member.generation).toSet().toList()..sort();
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      for (final generation in generations) ...[
+        Padding(
+            padding: const EdgeInsets.fromLTRB(4, 14, 4, 8),
+            child: Text('${vi ? 'ĐỜI' : 'GENERATION'} $generation',
+                style: TextStyle(
+                    color: isDark
+                        ? AppColors.accentGold
+                        : AppColors.accentGoldLightMode,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: .8))),
+        GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: members.where((m) => m.generation == generation).length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+                mainAxisExtent: 206),
+            itemBuilder: (_, index) => _memberCard(
+                members
+                    .where((m) => m.generation == generation)
+                    .elementAt(index),
+                isDark,
+                vi)),
+      ],
+    ]);
   }
 
   Widget _emptyTree(bool isDark) {

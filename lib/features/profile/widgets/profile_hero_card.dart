@@ -9,7 +9,6 @@ class ProfileHeroCard extends ConsumerWidget {
   final UserModel user;
   final bool isUploading;
   final VoidCallback onPickAvatar;
-  final VoidCallback? onDeleteAvatar;
   final String lang;
   final bool isDark;
 
@@ -18,7 +17,6 @@ class ProfileHeroCard extends ConsumerWidget {
     required this.user,
     required this.isUploading,
     required this.onPickAvatar,
-    this.onDeleteAvatar,
     required this.lang,
     required this.isDark,
   });
@@ -148,17 +146,6 @@ class ProfileHeroCard extends ConsumerWidget {
                   ),
                 ),
               ),
-              if (avatarUrl != null && onDeleteAvatar != null)
-                Positioned(
-                    left: 0,
-                    bottom: 0,
-                    child: IconButton(
-                        onPressed: isUploading ? null : onDeleteAvatar,
-                        tooltip: lang == 'vi' ? 'Xoá ảnh' : 'Delete avatar',
-                        style: IconButton.styleFrom(
-                            backgroundColor: AppColors.error,
-                            foregroundColor: Colors.white),
-                        icon: const Icon(Icons.delete_outline, size: 17))),
             ],
           ),
           const SizedBox(height: 16),

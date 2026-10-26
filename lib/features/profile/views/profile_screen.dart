@@ -138,6 +138,41 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     }
   }
 
+  Future<void> _showAvatarActions(String lang, bool hasAvatar) async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: Theme.of(context).colorScheme.surface,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: Text(lang == 'vi' ? 'Chọn ảnh mới' : 'Choose new photo'),
+              onTap: () => Navigator.pop(sheetContext, 'choose'),
+            ),
+            if (hasAvatar)
+              ListTile(
+                leading: const Icon(Icons.delete_outline),
+                title:
+                    Text(lang == 'vi' ? 'Xóa ảnh đại diện' : 'Delete avatar'),
+                onTap: () => Navigator.pop(sheetContext, 'delete'),
+              ),
+            ListTile(
+              leading: const Icon(Icons.close),
+              title: Text(lang == 'vi' ? 'Hủy' : 'Cancel'),
+              onTap: () => Navigator.pop(sheetContext),
+            ),
+          ]),
+        ),
+      ),
+    );
+    if (!mounted) return;
+    if (action == 'choose') await _pickAndUploadAvatar(lang);
+    if (action == 'delete') await _deleteAvatar(lang);
+  }
+
   Future<void> _switchAccount() async {
     await ref.read(authStateProvider.notifier).logout();
     if (!mounted) return;
@@ -296,8 +331,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
             ProfileHeroCard(
               user: user,
               isUploading: _isUploading,
-              onPickAvatar: () => _pickAndUploadAvatar(lang),
-              onDeleteAvatar: () => _deleteAvatar(lang),
+              onPickAvatar: () =>
+                  _showAvatarActions(lang, user.avatarUrl?.isNotEmpty == true),
               lang: lang,
               isDark: isDark,
             ),

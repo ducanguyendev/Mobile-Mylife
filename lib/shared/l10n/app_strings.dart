@@ -21,6 +21,7 @@ class AppStrings {
       'hero_greet': 'Xin chào, tôi là',
       'hero_name': 'NGUYỄN HUỲNH MINH ĐỨC',
       'hero_title': 'Lập trình viên Backend & Game',
+      'home.btnContact': 'Liên hệ với tôi',
       'hero_desc':
           'Chuyên thiết kế kiến trúc hệ thống backend hiệu năng cao, xây dựng API mở rộng và lập trình gameplay tương tác mượt mà sử dụng các ngôn ngữ C#, Go kết hợp cùng Unity, Unreal Engine.',
       'stats_exp_val': '1 Năm',
@@ -147,6 +148,7 @@ class AppStrings {
       'hero_greet': 'Hi I am',
       'hero_name': 'NGUYEN HUYNH MINH DUC',
       'hero_title': 'Backend & Game Developer',
+      'home.btnContact': 'Contact me',
       'hero_desc':
           'Specializing in high-performance backend architectures, scalable API systems, and immersive gameplay programming using C# and Go alongside Unity and Unreal Engine.',
       'stats_exp_val': '1 Year',

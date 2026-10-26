@@ -581,6 +581,7 @@ class _MemberFormBottomSheetState extends ConsumerState<MemberFormBottomSheet> {
                             dividerColor: Colors.transparent,
                           ),
                           child: ExpansionTile(
+                            initiallyExpanded: true,
                             tilePadding: EdgeInsets.zero,
                             title: Text(
                               'Thông tin bổ sung',
