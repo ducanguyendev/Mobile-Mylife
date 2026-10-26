@@ -15,6 +15,7 @@ import '../widgets/profile_hero_card.dart';
 import '../widgets/profile_security_tab.dart';
 import '../widgets/unauthenticated_profile_card.dart';
 import '../../family_tree/views/family_tree_screen.dart';
+import '../../auth/views/login_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -98,6 +99,51 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
         if (mounted) setState(() => _isUploading = false);
       }
     }
+  }
+
+  Future<void> _deleteAvatar(String lang) async {
+    final yes = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+                title:
+                    Text(lang == 'vi' ? 'Xoá ảnh đại diện?' : 'Delete avatar?'),
+                content: Text(lang == 'vi'
+                    ? 'Ảnh đại diện sẽ bị xoá khỏi hồ sơ.'
+                    : 'Your profile avatar will be removed.'),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: Text(lang == 'vi' ? 'Huỷ' : 'Cancel')),
+                  FilledButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: Text(lang == 'vi' ? 'Xoá' : 'Delete'))
+                ]));
+    if (yes != true) return;
+    setState(() => _isUploading = true);
+    try {
+      await ref.read(avatarApiServiceProvider).deleteAvatar();
+      ref.read(authStateProvider.notifier).updateAvatarLocally(null);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Text(
+                lang == 'vi' ? 'Đã xoá ảnh đại diện.' : 'Avatar deleted.')));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('$e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
+    }
+  }
+
+  Future<void> _switchAccount() async {
+    await ref.read(authStateProvider.notifier).logout();
+    if (!mounted) return;
+    Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false);
   }
 
   void _showChangePasswordDialog() {
@@ -251,6 +297,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
               user: user,
               isUploading: _isUploading,
               onPickAvatar: () => _pickAndUploadAvatar(lang),
+              onDeleteAvatar: () => _deleteAvatar(lang),
               lang: lang,
               isDark: isDark,
             ),
@@ -311,6 +358,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                     isDark: isDark,
                     onChangePassword: _showChangePasswordDialog,
                     onLogout: () => _confirmLogout(context, lang),
+                    onSwitchAccount: _switchAccount,
                   );
                 }
               },

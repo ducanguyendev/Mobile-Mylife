@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/family_member_model.dart';
@@ -94,6 +95,13 @@ class FamilyTreeNotifier extends StateNotifier<FamilyTreeState> {
   Future<bool> deleteMember(int id) async {
     return _mutate(() => _service.deleteMember(id));
   }
+
+  Future<bool> uploadAvatar(int id, File file) async => _mutate(() async {
+        await _service.uploadAvatar(id, file);
+      });
+  Future<bool> deleteAvatar(int id) async => _mutate(() async {
+        await _service.deleteAvatar(id);
+      });
 
   Future<bool> _mutate(Future<void> Function() operation) async {
     state = state.copyWith(isMutating: true, clearError: true);

@@ -9,6 +9,8 @@ class FamilyMember {
   final int generation;
   final String? gender;
   final String? dateOfBirth;
+  final String lifeStatus;
+  final String? deathDate;
   final String? role;
   final String? address;
   final String? phoneNumber;
@@ -34,6 +36,8 @@ class FamilyMember {
     required this.generation,
     this.gender,
     this.dateOfBirth,
+    this.lifeStatus = 'LIVING',
+    this.deathDate,
     this.role,
     this.address,
     this.phoneNumber,
@@ -69,6 +73,8 @@ class FamilyMember {
       generation: _asInt(json['generation']) ?? 1,
       gender: _asString(json['gender']),
       dateOfBirth: _asString(json['dateOfBirth']),
+      lifeStatus: _asString(json['lifeStatus']) ?? 'LIVING',
+      deathDate: _asString(json['deathDate']),
       role: _asString(json['role']),
       address: _asString(json['address']),
       phoneNumber: _asString(json['phoneNumber']),
@@ -100,12 +106,13 @@ class FamilyMember {
       'generation': generation,
       'gender': _emptyToNull(gender),
       'dateOfBirth': _emptyToNull(dateOfBirth),
+      'lifeStatus': lifeStatus,
+      'deathDate': _emptyToNull(deathDate),
       'role': _emptyToNull(role),
       'address': _emptyToNull(address),
       'phoneNumber': _emptyToNull(phoneNumber),
       'facebookUrl': _emptyToNull(facebookUrl),
       'instagramUrl': _emptyToNull(instagramUrl),
-      'avatarUrl': _emptyToNull(avatarUrl),
       'biography': _emptyToNull(biography),
       'fatherId': fatherId,
       'motherId': motherId,

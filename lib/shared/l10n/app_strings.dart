@@ -21,19 +21,27 @@ class AppStrings {
       'hero_greet': 'Xin chào, tôi là',
       'hero_name': 'NGUYỄN HUỲNH MINH ĐỨC',
       'hero_title': 'Lập trình viên Backend & Game',
-      'hero_desc': 'Chuyên thiết kế kiến trúc hệ thống backend hiệu năng cao, xây dựng API mở rộng và lập trình gameplay tương tác mượt mà sử dụng các ngôn ngữ C#, Go kết hợp cùng Unity, Unreal Engine.',
+      'hero_desc':
+          'Chuyên thiết kế kiến trúc hệ thống backend hiệu năng cao, xây dựng API mở rộng và lập trình gameplay tương tác mượt mà sử dụng các ngôn ngữ C#, Go kết hợp cùng Unity, Unreal Engine.',
       'stats_exp_val': '1 Năm',
       'stats_exp_lbl': 'KINH NGHIỆM',
       'stats_proj_val': '30+',
       'stats_proj_lbl': 'DỰ ÁN',
       'stats_clients_val': '20+',
       'stats_clients_lbl': 'KHÁCH HÀNG',
+      'stats_section_title': 'THÀNH TỰU',
+      'stats_portfolio_projects': 'DỰ ÁN',
+      'stats_portfolio_clients': 'KHÁCH HÀNG',
+      'stats_portfolio_experience': 'NĂM KINH NGHIỆM',
+      'stats_portfolio_certificates': 'CHỨNG CHỈ',
 
       // About
       'about_title': 'GIỚI THIỆU VỀ TÔI',
       'about_subtitle': 'Kiến Trúc Backend, Hệ Thống Server & Phát Triển Game',
-      'about_p1': 'Xin chào! Tôi là một kỹ sư lập trình chuyên về mảng Backend và phát triển Game. Niềm đam mê của tôi là xây dựng hệ thống máy chủ mạnh mẽ, tối ưu hóa truy vấn cơ sở dữ liệu hiệu năng cao và biến các ý tưởng gameplay độc đáo thành hiện thực thông qua những dòng code tối ưu.',
-      'about_p2': 'Tôi liên tục mài giũa các kỹ năng phát triển phần mềm với C#, C++, Go và các hệ cơ sở dữ liệu SQL/NoSQL, đồng thời tích cực thử nghiệm trên các Engine hàng đầu như Unity và Unreal Engine.',
+      'about_p1':
+          'Xin chào! Tôi là một kỹ sư lập trình chuyên về mảng Backend và phát triển Game. Niềm đam mê của tôi là xây dựng hệ thống máy chủ mạnh mẽ, tối ưu hóa truy vấn cơ sở dữ liệu hiệu năng cao và biến các ý tưởng gameplay độc đáo thành hiện thực thông qua những dòng code tối ưu.',
+      'about_p2':
+          'Tôi liên tục mài giũa các kỹ năng phát triển phần mềm với C#, C++, Go và các hệ cơ sở dữ liệu SQL/NoSQL, đồng thời tích cực thử nghiệm trên các Engine hàng đầu như Unity và Unreal Engine.',
 
       // Skills
       'skills_title': 'KỸ NĂNG LẬP TRÌNH',
@@ -50,22 +58,26 @@ class AppStrings {
       'exp1_role': 'Lập Trình Viên Backend & Game Cấp Cao',
       'exp1_company': 'Apex Interactive Studio',
       'exp1_duration': '2018 - Hiện tại',
-      'exp1_desc': 'Thiết kế kiến trúc máy chủ game chịu tải cao xử lý hơn 50.000 người chơi đồng thời (CCU). Tối ưu truy vấn SQL và cơ sở dữ liệu lớn.',
+      'exp1_desc':
+          'Thiết kế kiến trúc máy chủ game chịu tải cao xử lý hơn 50.000 người chơi đồng thời (CCU). Tối ưu truy vấn SQL và cơ sở dữ liệu lớn.',
 
       'exp2_role': 'Lập Trình Viên Game',
       'exp2_company': 'Pixel Perfect Games',
       'exp2_duration': '2015 - 2018',
-      'exp2_desc': 'Lập trình các cơ chế gameplay cốt lõi, hành vi AI và vật lý sử dụng C# trong Unity. Đóng gói bản build lên Google Play & App Store.',
+      'exp2_desc':
+          'Lập trình các cơ chế gameplay cốt lõi, hành vi AI và vật lý sử dụng C# trong Unity. Đóng gói bản build lên Google Play & App Store.',
 
       'exp3_role': 'Lập Trình Viên Phần Mềm',
       'exp3_company': 'TechFlow Solutions',
       'exp3_duration': '2013 - 2015',
-      'exp3_desc': 'Phát triển hệ thống RESTful APIs và microservices. Viết bài kiểm thử tự động đạt độ bao phủ mã nguồn 92%.',
+      'exp3_desc':
+          'Phát triển hệ thống RESTful APIs và microservices. Viết bài kiểm thử tự động đạt độ bao phủ mã nguồn 92%.',
 
       // Contact
       'contact_title': 'LIÊN HỆ TÔI',
       'contact_subtitle': 'Kết Nối Trực Tiếp',
-      'contact_desc': 'Bạn có ý tưởng dự án, muốn hợp tác hay trao đổi công nghệ? Hãy gửi tin nhắn cho tôi!',
+      'contact_desc':
+          'Bạn có ý tưởng dự án, muốn hợp tác hay trao đổi công nghệ? Hãy gửi tin nhắn cho tôi!',
       'lbl_name': 'Họ và tên',
       'hint_name': 'Nhập họ và tên của bạn',
       'lbl_email': 'Địa chỉ Email',
@@ -135,19 +147,28 @@ class AppStrings {
       'hero_greet': 'Hi I am',
       'hero_name': 'NGUYEN HUYNH MINH DUC',
       'hero_title': 'Backend & Game Developer',
-      'hero_desc': 'Specializing in high-performance backend architectures, scalable API systems, and immersive gameplay programming using C# and Go alongside Unity and Unreal Engine.',
+      'hero_desc':
+          'Specializing in high-performance backend architectures, scalable API systems, and immersive gameplay programming using C# and Go alongside Unity and Unreal Engine.',
       'stats_exp_val': '1 Year',
       'stats_exp_lbl': 'EXPERIENCE',
       'stats_proj_val': '30+',
       'stats_proj_lbl': 'PROJECTS',
       'stats_clients_val': '20+',
       'stats_clients_lbl': 'CLIENTS',
+      'stats_section_title': 'ACHIEVEMENTS',
+      'stats_portfolio_projects': 'PROJECTS',
+      'stats_portfolio_clients': 'CLIENTS',
+      'stats_portfolio_experience': 'YEARS OF EXPERIENCE',
+      'stats_portfolio_certificates': 'CERTIFICATES',
 
       // About
       'about_title': 'ABOUT ME',
-      'about_subtitle': 'Backend Architecture, Server Systems & Game Development',
-      'about_p1': 'Hi there! I am a software engineer specializing in Backend systems and Game development. My passion lies in constructing robust server structures, optimizing high-performance database queries, and translating unique gameplay concepts into reality through clean, optimized code.',
-      'about_p2': 'I continuously hone my software development skills with C#, C++, Go, and SQL/NoSQL databases, while actively experimenting on leading engines like Unity and Unreal Engine.',
+      'about_subtitle':
+          'Backend Architecture, Server Systems & Game Development',
+      'about_p1':
+          'Hi there! I am a software engineer specializing in Backend systems and Game development. My passion lies in constructing robust server structures, optimizing high-performance database queries, and translating unique gameplay concepts into reality through clean, optimized code.',
+      'about_p2':
+          'I continuously hone my software development skills with C#, C++, Go, and SQL/NoSQL databases, while actively experimenting on leading engines like Unity and Unreal Engine.',
 
       // Skills
       'skills_title': 'TECHNICAL SKILLS',
@@ -164,22 +185,26 @@ class AppStrings {
       'exp1_role': 'Senior Backend & Game Developer',
       'exp1_company': 'Apex Interactive Studio',
       'exp1_duration': '2018 - Present',
-      'exp1_desc': 'Architected high-performance game servers handling 50k+ concurrent users (CCU). Optimized SQL queries and large databases.',
+      'exp1_desc':
+          'Architected high-performance game servers handling 50k+ concurrent users (CCU). Optimized SQL queries and large databases.',
 
       'exp2_role': 'Game Programmer',
       'exp2_company': 'Pixel Perfect Games',
       'exp2_duration': '2015 - 2018',
-      'exp2_desc': 'Programmed core gameplay mechanics, AI behaviors, and physics simulations in C# using Unity. Deployed builds to Google Play & App Store.',
+      'exp2_desc':
+          'Programmed core gameplay mechanics, AI behaviors, and physics simulations in C# using Unity. Deployed builds to Google Play & App Store.',
 
       'exp3_role': 'Junior Software Engineer',
       'exp3_company': 'TechFlow Solutions',
       'exp3_duration': '2013 - 2015',
-      'exp3_desc': 'Developed RESTful APIs and microservice architectures. Automated unit and integration tests achieving 92% code coverage.',
+      'exp3_desc':
+          'Developed RESTful APIs and microservice architectures. Automated unit and integration tests achieving 92% code coverage.',
 
       // Contact
       'contact_title': 'CONTACT ME',
       'contact_subtitle': 'Reach Out',
-      'contact_desc': 'Have a project in mind, want to collaborate, or discuss technology? Feel free to send a message!',
+      'contact_desc':
+          'Have a project in mind, want to collaborate, or discuss technology? Feel free to send a message!',
       'lbl_name': 'Full Name',
       'hint_name': 'Enter your full name',
       'lbl_email': 'Email Address',

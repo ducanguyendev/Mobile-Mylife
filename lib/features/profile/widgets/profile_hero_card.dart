@@ -9,6 +9,7 @@ class ProfileHeroCard extends ConsumerWidget {
   final UserModel user;
   final bool isUploading;
   final VoidCallback onPickAvatar;
+  final VoidCallback? onDeleteAvatar;
   final String lang;
   final bool isDark;
 
@@ -17,6 +18,7 @@ class ProfileHeroCard extends ConsumerWidget {
     required this.user,
     required this.isUploading,
     required this.onPickAvatar,
+    this.onDeleteAvatar,
     required this.lang,
     required this.isDark,
   });
@@ -24,10 +26,13 @@ class ProfileHeroCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cardBg = isDark ? const Color(0xFF14131C) : Colors.white;
-    final cardBorder = isDark ? const Color(0xFF262338) : const Color(0xFFE2E8F0);
+    final cardBorder =
+        isDark ? const Color(0xFF262338) : const Color(0xFFE2E8F0);
     final textPrimary = isDark ? Colors.white : const Color(0xFF1E293B);
-    final textSecondary = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
-    final accentGold = isDark ? AppColors.accentGold : AppColors.accentGoldLightMode;
+    final textSecondary =
+        isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final accentGold =
+        isDark ? AppColors.accentGold : AppColors.accentGoldLightMode;
     final hasGoogleLogin = user.hasGoogleLogin;
     final apiBaseUrl = ref.watch(apiBaseUrlProvider).valueOrNull ??
         ref.watch(dioClientProvider).options.baseUrl;
@@ -70,7 +75,9 @@ class ProfileHeroCard extends ConsumerWidget {
                   child: Container(
                     width: 92,
                     height: 92,
-                    color: isDark ? const Color(0xFF221F33) : const Color(0xFFE2E8F0),
+                    color: isDark
+                        ? const Color(0xFF221F33)
+                        : const Color(0xFFE2E8F0),
                     child: avatarUrl != null && avatarUrl.isNotEmpty
                         ? CachedNetworkImage(
                             imageUrl: avatarUrl,
@@ -132,13 +139,26 @@ class ProfileHeroCard extends ConsumerWidget {
                             height: 16,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.black),
                             ),
                           )
-                        : const Icon(Icons.camera_alt_rounded, size: 18, color: Colors.black),
+                        : const Icon(Icons.camera_alt_rounded,
+                            size: 18, color: Colors.black),
                   ),
                 ),
               ),
+              if (avatarUrl != null && onDeleteAvatar != null)
+                Positioned(
+                    left: 0,
+                    bottom: 0,
+                    child: IconButton(
+                        onPressed: isUploading ? null : onDeleteAvatar,
+                        tooltip: lang == 'vi' ? 'Xoá ảnh' : 'Delete avatar',
+                        style: IconButton.styleFrom(
+                            backgroundColor: AppColors.error,
+                            foregroundColor: Colors.white),
+                        icon: const Icon(Icons.delete_outline, size: 17))),
             ],
           ),
           const SizedBox(height: 16),
@@ -182,7 +202,8 @@ class ProfileHeroCard extends ConsumerWidget {
             children: [
               // Role Badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
                   color: user.isAdmin
                       ? const Color(0xFFEF4444).withValues(alpha: 0.15)
@@ -199,13 +220,15 @@ class ProfileHeroCard extends ConsumerWidget {
                     Icon(
                       user.isAdmin ? Icons.shield_rounded : Icons.star_rounded,
                       size: 13,
-                      color: user.isAdmin ? const Color(0xFFEF4444) : accentGold,
+                      color:
+                          user.isAdmin ? const Color(0xFFEF4444) : accentGold,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       user.isAdmin ? 'ADMINISTRATOR' : user.role.toUpperCase(),
                       style: TextStyle(
-                        color: user.isAdmin ? const Color(0xFFEF4444) : accentGold,
+                        color:
+                            user.isAdmin ? const Color(0xFFEF4444) : accentGold,
                         fontWeight: FontWeight.bold,
                         fontSize: 11,
                         letterSpacing: 0.5,
@@ -217,9 +240,12 @@ class ProfileHeroCard extends ConsumerWidget {
 
               // Auth Provider Pill (Google / Local)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E1B2E) : const Color(0xFFF1F5F9),
+                  color: isDark
+                      ? const Color(0xFF1E1B2E)
+                      : const Color(0xFFF1F5F9),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(color: cardBorder),
                 ),
@@ -237,7 +263,10 @@ class ProfileHeroCard extends ConsumerWidget {
                         padding: const EdgeInsets.all(2),
                         child: Image.asset(
                           'assets/icons/google_g.png',
-                          errorBuilder: (_, __, ___) => const Icon(Icons.g_mobiledata, size: 10, color: Colors.blue),
+                          errorBuilder: (_, __, ___) => const Icon(
+                              Icons.g_mobiledata,
+                              size: 10,
+                              color: Colors.blue),
                         ),
                       ),
                       const SizedBox(width: 6),
@@ -250,7 +279,8 @@ class ProfileHeroCard extends ConsumerWidget {
                         ),
                       ),
                     ] else ...[
-                      Icon(Icons.lock_person_outlined, size: 13, color: textSecondary),
+                      Icon(Icons.lock_person_outlined,
+                          size: 13, color: textSecondary),
                       const SizedBox(width: 6),
                       Text(
                         lang == 'vi' ? 'Mật khẩu cục bộ' : 'Local Account',

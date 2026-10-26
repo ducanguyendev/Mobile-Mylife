@@ -13,6 +13,8 @@ import '../widgets/experience_section.dart';
 import '../widgets/hero_section.dart';
 import '../widgets/projects_section.dart';
 import '../widgets/skills_section.dart';
+import '../widgets/stats_section.dart';
+import '../../my_life/views/my_life_hub_screen.dart';
 
 class PortfolioHomeScreen extends ConsumerWidget {
   const PortfolioHomeScreen({super.key});
@@ -27,7 +29,8 @@ class PortfolioHomeScreen extends ConsumerWidget {
         ref.watch(dioClientProvider).options.baseUrl;
     final avatarUrl = user?.avatarUrlForBase(apiBaseUrl);
 
-    final accentColor = isDark ? AppColors.accentGold : AppColors.accentGoldLightMode;
+    final accentColor =
+        isDark ? AppColors.accentGold : AppColors.accentGoldLightMode;
     final primaryTextColor = isDark ? Colors.white : const Color(0xFF1E293B);
 
     return Scaffold(
@@ -43,6 +46,14 @@ class PortfolioHomeScreen extends ConsumerWidget {
           ),
         ),
         actions: [
+          if (authState.isAuthenticated)
+            IconButton(
+                tooltip: 'MyLife',
+                icon: Icon(Icons.family_restroom, color: accentColor),
+                onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => const MyLifeHubScreen()))),
           // Khi đã đăng nhập: Hiển thị avatar tròn clickable mở màn hình Hồ sơ
           if (authState.isAuthenticated && user != null)
             GestureDetector(
@@ -81,7 +92,9 @@ class PortfolioHomeScreen extends ConsumerWidget {
                                 height: 12,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 1.5,
-                                  color: isDark ? const Color(0xFF0A0A0A) : Colors.white,
+                                  color: isDark
+                                      ? const Color(0xFF0A0A0A)
+                                      : Colors.white,
                                 ),
                               ),
                             ),
@@ -89,7 +102,9 @@ class PortfolioHomeScreen extends ConsumerWidget {
                               child: Text(
                                 user.initials,
                                 style: TextStyle(
-                                  color: isDark ? const Color(0xFF0A0A0A) : Colors.white,
+                                  color: isDark
+                                      ? const Color(0xFF0A0A0A)
+                                      : Colors.white,
                                   fontWeight: FontWeight.w800,
                                   fontSize: 12,
                                 ),
@@ -100,7 +115,9 @@ class PortfolioHomeScreen extends ConsumerWidget {
                             child: Text(
                               user.initials,
                               style: TextStyle(
-                                color: isDark ? const Color(0xFF0A0A0A) : Colors.white,
+                                color: isDark
+                                    ? const Color(0xFF0A0A0A)
+                                    : Colors.white,
                                 fontWeight: FontWeight.w800,
                                 fontSize: 12,
                               ),
@@ -130,6 +147,10 @@ class PortfolioHomeScreen extends ConsumerWidget {
           children: [
             // 1. Hero Section
             HeroSection(),
+            SizedBox(height: 24),
+
+            // Portfolio statistics from the web portfolio.
+            StatsSection(),
             SizedBox(height: 24),
 
             // 2. About Me Section

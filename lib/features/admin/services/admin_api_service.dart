@@ -5,6 +5,7 @@ import '../../../shared/api/dio_client.dart';
 import '../../auth/models/user_model.dart';
 import '../models/admin_stats_model.dart';
 import '../models/admin_user_model.dart';
+import '../models/login_log_model.dart';
 
 final adminApiServiceProvider = Provider<AdminApiService>((ref) {
   final dio = ref.watch(dioClientProvider);
@@ -48,6 +49,20 @@ class AdminApiService {
         .toList();
   }
 
+  Future<List<LoginLogModel>> getLogs() async {
+    final response = await _dio.get(ApiEndpoints.adminLogs);
+    final data = response.data;
+    if (data is! List) {
+      throw const FormatException(
+          'The server returned an invalid login log list.');
+    }
+    return data
+        .whereType<Map>()
+        .map((v) => LoginLogModel.fromJson(
+            v.map((k, value) => MapEntry(k.toString(), value))))
+        .toList();
+  }
+
   Future<void> toggleUserStatus(int userId, bool isActive) async {
     await _dio.put(
       ApiEndpoints.adminUpdateStatus(userId),
@@ -58,7 +73,8 @@ class AdminApiService {
   Future<void> changeUserRole(int userId, String newRole) async {
     final normalizedRole = UserModel.normalizeRole(newRole);
     if (normalizedRole != newRole.trim().toUpperCase()) {
-      throw ArgumentError.value(newRole, 'newRole', 'Role must be ADMIN or USER.');
+      throw ArgumentError.value(
+          newRole, 'newRole', 'Role must be ADMIN or USER.');
     }
     await _dio.put(
       ApiEndpoints.adminUpdateRole(userId),

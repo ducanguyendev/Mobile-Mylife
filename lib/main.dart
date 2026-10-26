@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'features/portfolio/views/portfolio_home_screen.dart';
 import 'shared/l10n/app_language_provider.dart';
 import 'shared/theme/app_theme.dart';
 import 'shared/theme/app_theme_provider.dart';
 import 'shared/utils/app_constants.dart';
 
-final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+final GlobalKey<ScaffoldMessengerState> rootScaffoldMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
 final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting();
   runApp(
     const ProviderScope(
       child: MyLifeApp(),

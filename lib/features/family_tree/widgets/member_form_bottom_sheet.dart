@@ -37,9 +37,10 @@ class _MemberFormBottomSheetState extends ConsumerState<MemberFormBottomSheet> {
   late final TextEditingController _phoneNumberController;
   late final TextEditingController _facebookUrlController;
   late final TextEditingController _instagramUrlController;
-  late final TextEditingController _avatarUrlController;
   late final TextEditingController _biographyController;
+  late final TextEditingController _deathDateController;
   late int _generation;
+  late String _lifeStatus;
   String? _gender;
   int? _fatherId;
   int? _motherId;
@@ -64,8 +65,9 @@ class _MemberFormBottomSheetState extends ConsumerState<MemberFormBottomSheet> {
         TextEditingController(text: member?.facebookUrl ?? '');
     _instagramUrlController =
         TextEditingController(text: member?.instagramUrl ?? '');
-    _avatarUrlController = TextEditingController(text: member?.avatarUrl ?? '');
     _biographyController = TextEditingController(text: member?.biography ?? '');
+    _deathDateController = TextEditingController(text: member?.deathDate ?? '');
+    _lifeStatus = member?.lifeStatus ?? 'LIVING';
 
     final parentGeneration = widget.parentMember?.generation;
     _generation = member?.generation ??
@@ -138,8 +140,8 @@ class _MemberFormBottomSheetState extends ConsumerState<MemberFormBottomSheet> {
     _phoneNumberController.dispose();
     _facebookUrlController.dispose();
     _instagramUrlController.dispose();
-    _avatarUrlController.dispose();
     _biographyController.dispose();
+    _deathDateController.dispose();
     super.dispose();
   }
 
@@ -158,12 +160,14 @@ class _MemberFormBottomSheetState extends ConsumerState<MemberFormBottomSheet> {
       generation: _generation,
       gender: _emptyToNull(_gender),
       dateOfBirth: _emptyToNull(_dateOfBirthController.text),
+      lifeStatus: _lifeStatus,
+      deathDate: _emptyToNull(_deathDateController.text),
       role: _emptyToNull(_roleController.text),
       address: _emptyToNull(_addressController.text),
       phoneNumber: _emptyToNull(_phoneNumberController.text),
       facebookUrl: _emptyToNull(_facebookUrlController.text),
       instagramUrl: _emptyToNull(_instagramUrlController.text),
-      avatarUrl: _emptyToNull(_avatarUrlController.text),
+      avatarUrl: existing?.avatarUrl,
       biography: _emptyToNull(_biographyController.text),
       fatherId: _fatherId,
       motherId: _motherId,
@@ -519,6 +523,32 @@ class _MemberFormBottomSheetState extends ConsumerState<MemberFormBottomSheet> {
                           keyboardType: TextInputType.datetime,
                         ),
                         const SizedBox(height: 16),
+                        DropdownButtonFormField<String>(
+                          initialValue: _lifeStatus,
+                          decoration: _dropdownDecoration(
+                              label: 'Tình trạng',
+                              icon: Icons.favorite_outline),
+                          items: const [
+                            DropdownMenuItem(
+                                value: 'LIVING', child: Text('Còn sống')),
+                            DropdownMenuItem(
+                                value: 'DECEASED', child: Text('Đã mất'))
+                          ],
+                          onChanged: _isSaving
+                              ? null
+                              : (value) => setState(
+                                  () => _lifeStatus = value ?? 'LIVING'),
+                        ),
+                        if (_lifeStatus == 'DECEASED') ...[
+                          const SizedBox(height: 16),
+                          CustomTextField(
+                              controller: _deathDateController,
+                              label: 'Ngày mất',
+                              hint: 'YYYY-MM-DD',
+                              prefixIcon: Icons.event_busy,
+                              keyboardType: TextInputType.datetime),
+                        ],
+                        const SizedBox(height: 16),
                         CustomTextField(
                           controller: _roleController,
                           label: 'Vai trò / danh xưng',
@@ -657,13 +687,6 @@ class _MemberFormBottomSheetState extends ConsumerState<MemberFormBottomSheet> {
                                 controller: _instagramUrlController,
                                 label: 'Instagram URL',
                                 prefixIcon: Icons.camera_alt_outlined,
-                                keyboardType: TextInputType.url,
-                              ),
-                              const SizedBox(height: 16),
-                              CustomTextField(
-                                controller: _avatarUrlController,
-                                label: 'Avatar URL',
-                                prefixIcon: Icons.image_outlined,
                                 keyboardType: TextInputType.url,
                               ),
                               const SizedBox(height: 16),

@@ -11,6 +11,7 @@ class ProfileSecurityTab extends ConsumerWidget {
   final bool isDark;
   final VoidCallback onChangePassword;
   final VoidCallback onLogout;
+  final VoidCallback? onSwitchAccount;
 
   const ProfileSecurityTab({
     super.key,
@@ -19,15 +20,19 @@ class ProfileSecurityTab extends ConsumerWidget {
     required this.isDark,
     required this.onChangePassword,
     required this.onLogout,
+    this.onSwitchAccount,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final cardBg = isDark ? const Color(0xFF14131C) : Colors.white;
-    final cardBorder = isDark ? const Color(0xFF262338) : const Color(0xFFE2E8F0);
+    final cardBorder =
+        isDark ? const Color(0xFF262338) : const Color(0xFFE2E8F0);
     final textPrimary = isDark ? Colors.white : const Color(0xFF1E293B);
-    final textSecondary = isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
-    final accentGold = isDark ? AppColors.accentGold : AppColors.accentGoldLightMode;
+    final textSecondary =
+        isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B);
+    final accentGold =
+        isDark ? AppColors.accentGold : AppColors.accentGoldLightMode;
 
     return Column(
       children: [
@@ -38,7 +43,8 @@ class ProfileSecurityTab extends ConsumerWidget {
             decoration: BoxDecoration(
               color: const Color(0xFFEF4444).withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.3)),
+              border: Border.all(
+                  color: const Color(0xFFEF4444).withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [
@@ -48,7 +54,8 @@ class ProfileSecurityTab extends ConsumerWidget {
                     color: const Color(0xFFEF4444).withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.admin_panel_settings_rounded, color: Color(0xFFEF4444), size: 22),
+                  child: const Icon(Icons.admin_panel_settings_rounded,
+                      color: Color(0xFFEF4444), size: 22),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -56,7 +63,9 @@ class ProfileSecurityTab extends ConsumerWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        lang == 'vi' ? 'Bảng Quản Trị Hệ Thống' : 'Admin Control Panel',
+                        lang == 'vi'
+                            ? 'Bảng Quản Trị Hệ Thống'
+                            : 'Admin Control Panel',
                         style: TextStyle(
                           color: textPrimary,
                           fontWeight: FontWeight.bold,
@@ -74,11 +83,13 @@ class ProfileSecurityTab extends ConsumerWidget {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Color(0xFFEF4444)),
+                  icon: const Icon(Icons.arrow_forward_ios_rounded,
+                      size: 16, color: Color(0xFFEF4444)),
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const AdminDashboardScreen()),
+                      MaterialPageRoute(
+                          builder: (_) => const AdminDashboardScreen()),
                     );
                   },
                 ),
@@ -121,7 +132,8 @@ class ProfileSecurityTab extends ConsumerWidget {
                 onTap: onChangePassword,
                 borderRadius: BorderRadius.circular(12),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
                   child: Row(
                     children: [
                       Container(
@@ -130,7 +142,8 @@ class ProfileSecurityTab extends ConsumerWidget {
                           color: accentGold.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: Icon(Icons.key_rounded, size: 20, color: accentGold),
+                        child: Icon(Icons.key_rounded,
+                            size: 20, color: accentGold),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -138,7 +151,9 @@ class ProfileSecurityTab extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              lang == 'vi' ? 'Đổi mật khẩu tài khoản' : 'Change Password',
+                              lang == 'vi'
+                                  ? 'Đổi mật khẩu tài khoản'
+                                  : 'Change Password',
                               style: TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
@@ -150,12 +165,14 @@ class ProfileSecurityTab extends ConsumerWidget {
                               lang == 'vi'
                                   ? 'Cập nhật mật khẩu định kỳ để bảo vệ tài khoản'
                                   : 'Update your password regularly for security',
-                              style: TextStyle(fontSize: 11.5, color: textSecondary),
+                              style: TextStyle(
+                                  fontSize: 11.5, color: textSecondary),
                             ),
                           ],
                         ),
                       ),
-                      Icon(Icons.arrow_forward_ios_rounded, size: 14, color: textSecondary),
+                      Icon(Icons.arrow_forward_ios_rounded,
+                          size: 14, color: textSecondary),
                     ],
                   ),
                 ),
@@ -164,48 +181,69 @@ class ProfileSecurityTab extends ConsumerWidget {
 
               // Language Switch Row
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
                 child: Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: isDark ? const Color(0xFF1E1C2E) : const Color(0xFFF1F5F9),
+                        color: isDark
+                            ? const Color(0xFF1E1C2E)
+                            : const Color(0xFFF1F5F9),
                         borderRadius: BorderRadius.circular(10),
                       ),
-                      child: Icon(Icons.language_rounded, size: 20, color: textPrimary),
+                      child: Icon(Icons.language_rounded,
+                          size: 20, color: textPrimary),
                     ),
                     const SizedBox(width: 14),
                     Expanded(
                       child: Text(
                         lang == 'vi' ? 'Ngôn ngữ hiển thị' : 'Display Language',
-                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13.5, color: textPrimary),
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13.5,
+                            color: textPrimary),
                       ),
                     ),
                     // Flag switchers
                     GestureDetector(
-                      onTap: () => ref.read(languageProvider.notifier).setLanguage('vi'),
+                      onTap: () =>
+                          ref.read(languageProvider.notifier).setLanguage('vi'),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: lang == 'vi' ? accentGold.withValues(alpha: 0.2) : Colors.transparent,
+                          color: lang == 'vi'
+                              ? accentGold.withValues(alpha: 0.2)
+                              : Colors.transparent,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: lang == 'vi' ? accentGold : cardBorder),
+                          border: Border.all(
+                              color: lang == 'vi' ? accentGold : cardBorder),
                         ),
-                        child: const Text('🇻🇳 VI', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        child: const Text('🇻🇳 VI',
+                            style: TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.bold)),
                       ),
                     ),
                     const SizedBox(width: 6),
                     GestureDetector(
-                      onTap: () => ref.read(languageProvider.notifier).setLanguage('en'),
+                      onTap: () =>
+                          ref.read(languageProvider.notifier).setLanguage('en'),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: lang == 'en' ? accentGold.withValues(alpha: 0.2) : Colors.transparent,
+                          color: lang == 'en'
+                              ? accentGold.withValues(alpha: 0.2)
+                              : Colors.transparent,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: lang == 'en' ? accentGold : cardBorder),
+                          border: Border.all(
+                              color: lang == 'en' ? accentGold : cardBorder),
                         ),
-                        child: const Text('🇬🇧 EN', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        child: const Text('🇬🇧 EN',
+                            style: TextStyle(
+                                fontSize: 12, fontWeight: FontWeight.bold)),
                       ),
                     ),
                   ],
@@ -216,6 +254,18 @@ class ProfileSecurityTab extends ConsumerWidget {
         ),
         const SizedBox(height: 16),
 
+        if (onSwitchAccount != null)
+          Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                      onPressed: onSwitchAccount,
+                      icon: const Icon(Icons.switch_account),
+                      label: Text(lang == 'vi'
+                          ? 'Chuyển tài khoản'
+                          : 'Switch account')))),
+
         // Sign Out Button
         SizedBox(
           width: double.infinity,
@@ -225,7 +275,8 @@ class ProfileSecurityTab extends ConsumerWidget {
               backgroundColor: const Color(0xFFEF4444),
               foregroundColor: Colors.white,
               elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
             ),
             onPressed: onLogout,
             child: Row(
@@ -235,7 +286,10 @@ class ProfileSecurityTab extends ConsumerWidget {
                 const SizedBox(width: 10),
                 Text(
                   lang == 'vi' ? 'ĐĂNG XUẤT TÀI KHOẢN' : 'SIGN OUT OF ACCOUNT',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13.5, letterSpacing: 0.5),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13.5,
+                      letterSpacing: 0.5),
                 ),
               ],
             ),

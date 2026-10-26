@@ -22,6 +22,15 @@ class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
   final _newController = TextEditingController();
   final _confirmController = TextEditingController();
   bool _isLoading = false;
+  @override
+  void initState() {
+    super.initState();
+    _newController.addListener(_passwordChanged);
+  }
+
+  void _passwordChanged() {
+    if (mounted) setState(() {});
+  }
 
   @override
   void dispose() {
@@ -105,6 +114,66 @@ class _ChangePasswordDialogState extends ConsumerState<ChangePasswordDialog> {
                 obscureText: true,
                 validator: Validators.validatePassword,
               ),
+              const SizedBox(height: 8),
+              Builder(builder: (context) {
+                final password = _newController.text;
+                final checks = [
+                  RegExp(r'[A-Z]').hasMatch(password),
+                  RegExp(r'\d').hasMatch(password),
+                  RegExp(r'[^A-Za-z0-9]').hasMatch(password),
+                  password.length >= 8
+                ];
+                final score = checks.where((v) => v).length;
+                final vi = Localizations.localeOf(context).languageCode == 'vi';
+                return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      LinearProgressIndicator(
+                          value: score / 4,
+                          color: score >= 4
+                              ? AppColors.success
+                              : score >= 2
+                                  ? AppColors.warning
+                                  : AppColors.error,
+                          minHeight: 5,
+                          borderRadius: BorderRadius.circular(5)),
+                      const SizedBox(height: 6),
+                      Wrap(
+                          spacing: 10,
+                          runSpacing: 4,
+                          children: List.generate(
+                              checks.length,
+                              (i) => Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                            checks[i]
+                                                ? Icons.check_circle
+                                                : Icons.circle_outlined,
+                                            size: 13,
+                                            color: checks[i]
+                                                ? AppColors.success
+                                                : AppColors.textMuted),
+                                        const SizedBox(width: 3),
+                                        Text(
+                                            (vi
+                                                ? [
+                                                    'Chữ hoa',
+                                                    'Số',
+                                                    'Ký tự đặc biệt',
+                                                    '8 ký tự'
+                                                  ][i]
+                                                : [
+                                                    'Uppercase',
+                                                    'Number',
+                                                    'Special character',
+                                                    '8 characters'
+                                                  ][i]),
+                                            style:
+                                                const TextStyle(fontSize: 10))
+                                      ])))
+                    ]);
+              }),
               const SizedBox(height: 12),
               CustomTextField(
                 controller: _confirmController,

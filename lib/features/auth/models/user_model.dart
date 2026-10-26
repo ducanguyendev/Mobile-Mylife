@@ -127,6 +127,7 @@ class UserModel {
     String? gender,
     String? dateOfBirth,
     String? avatarUrl,
+    bool clearAvatar = false,
     String? role,
     bool? isActive,
   }) {
@@ -137,7 +138,7 @@ class UserModel {
       phoneNumber: phoneNumber ?? this.phoneNumber,
       gender: gender ?? this.gender,
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
-      avatarUrl: avatarUrl ?? this.avatarUrl,
+      avatarUrl: clearAvatar ? null : (avatarUrl ?? this.avatarUrl),
       role: role == null ? this.role : normalizeRole(role),
       authProvider: authProvider,
       hasLocalLogin: hasLocalLogin,

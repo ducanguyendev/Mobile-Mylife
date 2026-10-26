@@ -12,7 +12,8 @@ class ApiEndpoints {
   // Avatar
   static const String uploadAvatar = '/avatar/upload';
   static const String deleteAvatar = '/avatar';
-  static String getAvatar(String email) => '/avatar/${Uri.encodeComponent(email)}';
+  static String getAvatar(String email) =>
+      '/avatar/${Uri.encodeComponent(email)}';
 
   // Admin
   static const String adminUsers = '/admin/users';
@@ -25,4 +26,17 @@ class ApiEndpoints {
   static const String familyTree = '/family-tree';
   static const String familyTreeGenerations = '$familyTree/generations';
   static String familyTreeMember(int id) => '$familyTree/$id';
+  static const String familyTreeMap = '$familyTree/map';
+  static const String familyAnniversaries = '$familyTree/anniversaries';
+  static String familyAnniversary(int id) => '$familyAnniversaries/$id';
+  static const String familyAnniversaryNextOccurrence =
+      '$familyAnniversaries/next-occurrence';
+  static const String familyAnniversaryLunarToSolar =
+      '$familyAnniversaries/lunar-to-solar';
+  static const String libraryAlbums = '/library/albums';
+  static String libraryAlbum(int id) => '$libraryAlbums/$id';
+  static String libraryAlbumPhotos(int id) => '$libraryAlbums/$id/photos';
+  static String libraryPhoto(int id) => '/library/photos/$id';
+  static String libraryPhotoImage(int id) => '/library/photos/$id/image';
+  static const String adminLogs = '/admin/logs';
 }

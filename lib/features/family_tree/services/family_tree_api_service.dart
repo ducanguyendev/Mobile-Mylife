@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -73,6 +75,34 @@ class FamilyTreeApiService {
 
   Future<void> deleteMember(int id) async {
     await _request(() => _dio.delete(ApiEndpoints.familyTreeMember(id)));
+  }
+
+  Future<FamilyMember> uploadAvatar(int id, File file) async {
+    final name = file.path.split(Platform.pathSeparator).last;
+    final ext =
+        name.contains('.') ? name.split('.').last.toLowerCase() : 'jpeg';
+    final mime = ext == 'jpg' ? 'jpeg' : ext;
+    final multipart = await MultipartFile.fromFile(file.path,
+        filename: name, contentType: DioMediaType('image', mime));
+    final form = FormData.fromMap({'file': multipart});
+    final response = await _request(() => _dio.post(
+          '${ApiEndpoints.familyTreeMember(id)}/avatar',
+          data: form,
+        ));
+    return _memberFromData(response);
+  }
+
+  Future<FamilyMember> deleteAvatar(int id) async {
+    final response = await _request(
+        () => _dio.delete('${ApiEndpoints.familyTreeMember(id)}/avatar'));
+    return _memberFromData(response);
+  }
+
+  Future<Uint8List> avatarImage(int id) async {
+    final response = await _dio.get<List<int>>(
+        '${ApiEndpoints.familyTreeMember(id)}/avatar/image',
+        options: Options(responseType: ResponseType.bytes));
+    return Uint8List.fromList(response.data ?? const <int>[]);
   }
 
   Future<dynamic> _request(Future<Response<dynamic>> Function() request) async {

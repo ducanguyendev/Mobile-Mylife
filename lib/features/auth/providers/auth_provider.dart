@@ -207,9 +207,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
     if (state.errorMessage != null) state = state.copyWith(clearError: true);
   }
 
-  void updateAvatarLocally(String avatarUrl) {
+  void updateAvatarLocally(String? avatarUrl) {
     if (state.user != null) {
-      state = state.copyWith(user: state.user!.copyWith(avatarUrl: avatarUrl));
+      state = state.copyWith(
+          user: state.user!
+              .copyWith(avatarUrl: avatarUrl, clearAvatar: avatarUrl == null));
     }
   }
 
