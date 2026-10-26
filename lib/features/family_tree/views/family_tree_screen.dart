@@ -107,6 +107,23 @@ class _FamilyTreeScreenState extends ConsumerState<FamilyTreeScreen> {
 
   Future<void> _showDetails(FamilyMember member) async {
     final vi = Localizations.localeOf(context).languageCode == 'vi';
+    final members = ref.read(familyTreeProvider).members;
+    final biologicalSiblings = members
+        .where((candidate) => _isBiologicalSibling(member, candidate))
+        .toList(growable: false);
+    final cousinSiblings = members
+        .where((candidate) =>
+            candidate.id != member.id &&
+            !_isBiologicalSibling(member, candidate) &&
+            _hasExplicitSiblingRelation(member, candidate))
+        .toList(growable: false);
+    final otherRelations = member.horizontalRelations
+        .where((relation) =>
+            relation.relationType.trim().toLowerCase() != 'sibling')
+        .map((relation) =>
+            '${_nameForId(relation.memberId)} (${relation.relationType})')
+        .join('\n');
+
     await showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
@@ -145,11 +162,15 @@ class _FamilyTreeScreenState extends ConsumerState<FamilyTreeScreen> {
                       _detail(vi ? 'Con' : 'Children',
                           member.childNames.join(', ')),
                       _detail(
-                          vi ? 'Quan hệ khác' : 'Other relations',
-                          member.horizontalRelations
-                              .map((r) =>
-                                  '${_nameForId(r.memberId)} (${r.relationType})')
-                              .join(', ')),
+                          vi ? 'Anh/Chị/Em ruột' : 'Full siblings',
+                          _formatSiblingList(
+                              member, biologicalSiblings, vi, true)),
+                      _detail(
+                          vi ? 'Anh/Chị/Em họ' : 'Cousins',
+                          _formatSiblingList(
+                              member, cousinSiblings, vi, false)),
+                      _detail(vi ? 'Quan hệ khác' : 'Other relations',
+                          otherRelations),
                       Wrap(spacing: 8, children: [
                         OutlinedButton.icon(
                             onPressed: () async {
@@ -184,6 +205,111 @@ class _FamilyTreeScreenState extends ConsumerState<FamilyTreeScreen> {
                               label: Text(vi ? 'Xoá ảnh' : 'Delete avatar'))
                       ]),
                     ])))));
+  }
+
+  bool _isBiologicalSibling(FamilyMember current, FamilyMember other) {
+    if (current.id == other.id) return false;
+    final sameFather = current.fatherId != null &&
+        current.fatherId! > 0 &&
+        current.fatherId == other.fatherId;
+    final sameMother = current.motherId != null &&
+        current.motherId! > 0 &&
+        current.motherId == other.motherId;
+    return sameFather || sameMother;
+  }
+
+  bool _hasExplicitSiblingRelation(FamilyMember current, FamilyMember other) {
+    bool hasSiblingLink(FamilyMember from, int toId) =>
+        from.horizontalRelations.any((relation) =>
+            relation.memberId == toId &&
+            relation.relationType.trim().toLowerCase() == 'sibling');
+
+    return hasSiblingLink(current, other.id) ||
+        hasSiblingLink(other, current.id);
+  }
+
+  DateTime? _parseBirthDate(String? value) {
+    final text = value?.trim();
+    if (text == null || text.isEmpty) return null;
+    return DateTime.tryParse(text);
+  }
+
+  String _siblingLabel(
+    FamilyMember current,
+    FamilyMember other,
+    bool vi,
+    bool biological,
+  ) {
+    final currentBirth = _parseBirthDate(current.dateOfBirth);
+    final otherBirth = _parseBirthDate(other.dateOfBirth);
+    if (currentBirth == null ||
+        otherBirth == null ||
+        currentBirth.isAtSameMomentAs(otherBirth)) {
+      if (vi) {
+        return biological ? 'Anh / Chị / Em ruột' : 'Anh / Chị / Em họ';
+      }
+      return biological ? 'Sibling' : 'Cousin';
+    }
+
+    final older = otherBirth.isBefore(currentBirth);
+    final gender = other.gender?.trim().toLowerCase();
+    final male = gender == 'male' || gender == 'nam';
+    final female = gender == 'female' || gender == 'nữ' || gender == 'nu';
+
+    if (vi) {
+      if (biological) {
+        if (older) {
+          if (male) return 'Anh ruột';
+          if (female) return 'Chị ruột';
+          return 'Anh / Chị ruột';
+        }
+        if (male) return 'Em trai ruột';
+        if (female) return 'Em gái ruột';
+        return 'Em ruột';
+      }
+
+      if (older) {
+        if (male) return 'Anh họ';
+        if (female) return 'Chị họ';
+        return 'Anh / Chị họ';
+      }
+      if (male) return 'Em trai họ';
+      if (female) return 'Em gái họ';
+      return 'Em họ';
+    }
+
+    if (biological) {
+      if (older) {
+        if (male) return 'Older brother';
+        if (female) return 'Older sister';
+        return 'Older sibling';
+      }
+      if (male) return 'Younger brother';
+      if (female) return 'Younger sister';
+      return 'Younger sibling';
+    }
+
+    if (older) {
+      if (male) return 'Older male cousin';
+      if (female) return 'Older female cousin';
+      return 'Older cousin';
+    }
+    if (male) return 'Younger male cousin';
+    if (female) return 'Younger female cousin';
+    return 'Younger cousin';
+  }
+
+  String _formatSiblingList(
+    FamilyMember current,
+    List<FamilyMember> siblings,
+    bool vi,
+    bool biological,
+  ) {
+    if (siblings.isEmpty) return '';
+    return siblings
+        .map((sibling) =>
+            '• ${sibling.fullName} — ${_siblingLabel(current, sibling, vi, biological)}')
+        .join('\n');
   }
 
   String _nameForId(int id) {
@@ -317,7 +443,7 @@ class _FamilyTreeScreenState extends ConsumerState<FamilyTreeScreen> {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(color: secondary, fontSize: 12)),
-              const Spacer(),
+              const SizedBox(height: 14),
               Row(children: [
                 Icon(Icons.child_care_outlined, size: 16, color: secondary),
                 const SizedBox(width: 5),
@@ -545,21 +671,24 @@ class _FamilyTreeScreenState extends ConsumerState<FamilyTreeScreen> {
                         : AppColors.accentGoldLightMode,
                     fontWeight: FontWeight.w800,
                     letterSpacing: .8))),
-        GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: members.where((m) => m.generation == generation).length,
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 10,
-                mainAxisSpacing: 10,
-                mainAxisExtent: 270),
-            itemBuilder: (_, index) => _memberCard(
-                members
-                    .where((m) => m.generation == generation)
-                    .elementAt(index),
-                isDark,
-                vi)),
+        LayoutBuilder(builder: (context, constraints) {
+          const spacing = 10.0;
+          final columns = constraints.maxWidth < 360 ? 1 : 2;
+          final cardWidth =
+              (constraints.maxWidth - spacing * (columns - 1)) / columns;
+          final generationMembers = members
+              .where((member) => member.generation == generation)
+              .toList(growable: false);
+
+          return Wrap(
+              spacing: spacing,
+              runSpacing: spacing,
+              children: generationMembers
+                  .map((member) => SizedBox(
+                      width: cardWidth,
+                      child: _memberCard(member, isDark, vi)))
+                  .toList(growable: false));
+        }),
       ],
     ]);
   }
