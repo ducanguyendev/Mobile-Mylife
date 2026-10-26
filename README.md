@@ -23,3 +23,9 @@ Kết nối thiết bị di động của bạn hoặc khởi động Emulator/S
 ```bash
 flutter run
 ```
+
+To load the VIETMAP vector style locally, create `.secrets/vietmap.json` with a `VIETMAP_TILE_KEY` entry from your environment and run:
+
+```bash
+flutter run --dart-define-from-file=.secrets/vietmap.json
+```
