@@ -44,7 +44,8 @@ class FamilyMapData {
       required this.pendingGeocodingMembers,
       required this.noAddressMembers,
       required this.failedGeocodingMembers,
-      required this.locations});
+      required this.locations,
+      this.members = const []});
   final int totalMembers,
       locatedMembers,
       unlocatedMembers,
@@ -52,6 +53,7 @@ class FamilyMapData {
       noAddressMembers,
       failedGeocodingMembers;
   final List<FamilyMapLocation> locations;
+  final List<FamilyMapMemberLocation> members;
   factory FamilyMapData.fromJson(Map<String, dynamic> j) => FamilyMapData(
       totalMembers: j['totalMembers'] as int,
       locatedMembers: j['locatedMembers'] as int,
@@ -59,8 +61,50 @@ class FamilyMapData {
       pendingGeocodingMembers: j['pendingGeocodingMembers'] as int,
       noAddressMembers: j['noAddressMembers'] as int,
       failedGeocodingMembers: j['failedGeocodingMembers'] as int,
+      members: (j['members'] as List? ?? const [])
+          .whereType<Map>()
+          .map((v) =>
+              FamilyMapMemberLocation.fromJson(Map<String, dynamic>.from(v)))
+          .toList(),
       locations: (j['locations'] as List? ?? const [])
           .whereType<Map>()
           .map((v) => FamilyMapLocation.fromJson(Map<String, dynamic>.from(v)))
           .toList());
+}
+
+class FamilyMapMemberLocation {
+  const FamilyMapMemberLocation({
+    required this.id,
+    required this.fullName,
+    required this.generation,
+    required this.status,
+    this.address,
+    this.latitude,
+    this.longitude,
+    this.locationDisplayName,
+    this.locationSource,
+  });
+
+  final int id;
+  final String fullName;
+  final int generation;
+  final String status;
+  final String? address;
+  final double? latitude;
+  final double? longitude;
+  final String? locationDisplayName;
+  final String? locationSource;
+
+  factory FamilyMapMemberLocation.fromJson(Map<String, dynamic> json) =>
+      FamilyMapMemberLocation(
+        id: json['id'] as int,
+        fullName: json['fullName'] as String,
+        generation: json['generation'] as int,
+        status: json['status'] as String? ?? 'UNAVAILABLE',
+        address: json['address'] as String?,
+        latitude: (json['latitude'] as num?)?.toDouble(),
+        longitude: (json['longitude'] as num?)?.toDouble(),
+        locationDisplayName: json['locationDisplayName'] as String?,
+        locationSource: json['locationSource'] as String?,
+      );
 }

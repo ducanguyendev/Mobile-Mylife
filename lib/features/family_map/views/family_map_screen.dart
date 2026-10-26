@@ -5,6 +5,7 @@ import 'package:latlong2/latlong.dart';
 import '../../../shared/theme/app_colors.dart';
 import '../models/family_map_data.dart';
 import '../providers/family_map_provider.dart';
+import '../services/family_map_api_service.dart';
 
 class FamilyMapScreen extends ConsumerWidget {
   const FamilyMapScreen({super.key});
@@ -18,6 +19,13 @@ class FamilyMapScreen extends ConsumerWidget {
         appBar: AppBar(
             title: Text(vi ? 'Bản đồ gia đình' : 'Family Map'),
             actions: [
+              IconButton(
+                  tooltip:
+                      vi ? 'Chỉnh vị trí thành viên' : 'Adjust member location',
+                  onPressed: data == null || data.members.isEmpty
+                      ? null
+                      : () => _pickLocation(context, ref, data, vi),
+                  icon: const Icon(Icons.edit_location_alt_outlined)),
               IconButton(
                   onPressed: () =>
                       ref.read(familyMapProvider.notifier).refresh(),
@@ -153,7 +161,147 @@ class FamilyMapScreen extends ConsumerWidget {
                                             ? 'Chưa có địa chỉ nào được định vị.'
                                             : 'No member locations are available yet.',
                                         textAlign: TextAlign.center)),
+                              const SizedBox(height: 12),
+                              OutlinedButton.icon(
+                                  onPressed: data.members.isEmpty
+                                      ? null
+                                      : () =>
+                                          _pickLocation(context, ref, data, vi),
+                                  icon: const Icon(
+                                      Icons.edit_location_alt_outlined),
+                                  label: Text(vi
+                                      ? 'Chỉnh vị trí thành viên'
+                                      : 'Adjust member location')),
                             ])));
+  }
+
+  static Future<void> _pickLocation(
+      BuildContext context, WidgetRef ref, FamilyMapData data, bool vi) async {
+    var selected = data.members.first;
+    LatLng? point = selected.latitude != null && selected.longitude != null
+        ? LatLng(selected.latitude!, selected.longitude!)
+        : null;
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) => SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+            child: SizedBox(
+              height: MediaQuery.sizeOf(context).height * .78,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(vi ? 'Chọn thành viên' : 'Choose a member',
+                      style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 8),
+                  DropdownButtonFormField<int>(
+                    initialValue: selected.id,
+                    isExpanded: true,
+                    items: data.members
+                        .map((member) => DropdownMenuItem<int>(
+                            value: member.id,
+                            child: Text(member.fullName,
+                                overflow: TextOverflow.ellipsis)))
+                        .toList(growable: false),
+                    onChanged: (id) {
+                      final next = data.members.firstWhere((m) => m.id == id);
+                      setSheetState(() {
+                        selected = next;
+                        point = next.latitude != null && next.longitude != null
+                            ? LatLng(next.latitude!, next.longitude!)
+                            : null;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  Text(vi
+                      ? 'Chạm vào bản đồ để đặt vị trí chính xác.'
+                      : 'Tap the map to choose the precise location.'),
+                  const SizedBox(height: 8),
+                  Expanded(
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: FlutterMap(
+                        key: ValueKey(selected.id),
+                        options: MapOptions(
+                          initialCenter: point ?? const LatLng(16.0, 106.0),
+                          initialZoom: point == null ? 5 : 13,
+                          onTap: (_, position) =>
+                              setSheetState(() => point = position),
+                        ),
+                        children: [
+                          TileLayer(
+                            urlTemplate:
+                                'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            userAgentPackageName: 'com.mylife.mobile',
+                          ),
+                          if (point != null)
+                            MarkerLayer(markers: [
+                              Marker(
+                                point: point!,
+                                width: 44,
+                                height: 44,
+                                child: const Icon(Icons.location_pin,
+                                    color: AppColors.error, size: 40),
+                              )
+                            ]),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    point == null
+                        ? (vi ? 'Chưa chọn vị trí' : 'No location selected')
+                        : '${point!.latitude.toStringAsFixed(6)}, ${point!.longitude.toStringAsFixed(6)}',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Row(children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(sheetContext),
+                        child: Text(vi ? 'Hủy' : 'Cancel'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: point == null
+                            ? null
+                            : () async {
+                                try {
+                                  await ref
+                                      .read(familyMapApiProvider)
+                                      .updateMemberLocation(selected.id,
+                                          point!.latitude, point!.longitude);
+                                  if (!sheetContext.mounted) return;
+                                  Navigator.pop(sheetContext);
+                                  await ref
+                                      .read(familyMapProvider.notifier)
+                                      .refresh();
+                                } catch (error) {
+                                  if (sheetContext.mounted) {
+                                    ScaffoldMessenger.of(sheetContext)
+                                        .showSnackBar(
+                                            SnackBar(content: Text('$error')));
+                                  }
+                                }
+                              },
+                        child: Text(vi ? 'Xác nhận' : 'Confirm'),
+                      ),
+                    ),
+                  ]),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   static LatLng _center(List<FamilyMapLocation> locs) => LatLng(

@@ -18,4 +18,10 @@ class FamilyMapApiService {
     }
     return FamilyMapData.fromJson(Map<String, dynamic>.from(data));
   }
+
+  Future<void> updateMemberLocation(
+      int memberId, double latitude, double longitude) async {
+    await _dio.put('${ApiEndpoints.familyTreeMember(memberId)}/location',
+        data: {'latitude': latitude, 'longitude': longitude});
+  }
 }

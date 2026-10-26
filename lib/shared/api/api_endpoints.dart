@@ -28,6 +28,11 @@ class ApiEndpoints {
   static String familyTreeMember(int id) => '$familyTree/$id';
   static const String familyTreeMap = '$familyTree/map';
   static const String familyAnniversaries = '$familyTree/anniversaries';
+  static const String familyTimeline = '$familyTree/timeline';
+  static String familyMemberProfile(int id) => '$familyTree/$id/profile';
+  static String familyMemberTimeline(int id) => '$familyTree/$id/timeline';
+  static const String familyRelationship = '$familyTree/relationship';
+  static String familyTimelineEvent(int id) => '$familyTimeline/$id';
   static String familyAnniversary(int id) => '$familyAnniversaries/$id';
   static const String familyAnniversaryNextOccurrence =
       '$familyAnniversaries/next-occurrence';
