@@ -553,7 +553,7 @@ class _FamilyTreeScreenState extends ConsumerState<FamilyTreeScreen> {
                 crossAxisCount: 2,
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 10,
-                mainAxisExtent: 206),
+                mainAxisExtent: 270),
             itemBuilder: (_, index) => _memberCard(
                 members
                     .where((m) => m.generation == generation)
