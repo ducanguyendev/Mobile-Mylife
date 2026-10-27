@@ -7,12 +7,12 @@ class FamilyAnniversary {
       this.relatedMemberName,
       this.relatedMemberGeneration,
       this.relatedMemberRole,
-      required this.lunarDay,
-      required this.lunarMonth,
+      this.lunarDay,
+      this.lunarMonth,
       required this.isLeapMonth,
       this.originalSolarDate,
       this.lunarYear,
-      required this.nextLunarYear,
+      this.nextLunarYear,
       required this.nextSolarDate,
       required this.daysUntil,
       this.place,
@@ -25,12 +25,12 @@ class FamilyAnniversary {
   final String? relatedMemberName;
   final int? relatedMemberGeneration;
   final String? relatedMemberRole;
-  final int lunarDay;
-  final int lunarMonth;
+  final int? lunarDay;
+  final int? lunarMonth;
   final bool isLeapMonth;
   final DateTime? originalSolarDate;
   final int? lunarYear;
-  final int nextLunarYear;
+  final int? nextLunarYear;
   final DateTime nextSolarDate;
   final int daysUntil;
   final String? place;
@@ -45,13 +45,13 @@ class FamilyAnniversary {
           relatedMemberName: j['relatedMemberName'] as String?,
           relatedMemberGeneration: j['relatedMemberGeneration'] as int?,
           relatedMemberRole: j['relatedMemberRole'] as String?,
-          lunarDay: j['lunarDay'] as int,
-          lunarMonth: j['lunarMonth'] as int,
+          lunarDay: j['lunarDay'] as int?,
+          lunarMonth: j['lunarMonth'] as int?,
           isLeapMonth: j['isLeapMonth'] as bool? ?? false,
           originalSolarDate:
               DateTime.tryParse(j['originalSolarDate'] as String? ?? ''),
           lunarYear: j['lunarYear'] as int?,
-          nextLunarYear: j['nextLunarYear'] as int,
+          nextLunarYear: j['nextLunarYear'] as int?,
           nextSolarDate: DateTime.parse(j['nextSolarDate'] as String),
           daysUntil: j['daysUntil'] as int,
           place: j['place'] as String?,

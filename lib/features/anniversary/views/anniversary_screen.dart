@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../../../shared/api/api_error.dart';
 import '../../../shared/theme/app_colors.dart';
+import '../../../shared/widgets/forms/mylife_form_fields.dart';
 import '../../family_tree/providers/family_tree_provider.dart';
 import '../models/family_anniversary.dart';
 import '../providers/anniversary_provider.dart';
@@ -52,19 +53,30 @@ class _AnniversaryScreenState extends ConsumerState<AnniversaryScreen> {
       if (!mounted) return;
     }
     final tree = ref.read(familyTreeProvider);
+    final initialType = item?.eventType ?? 'FAMILY_EVENT';
     final title = TextEditingController(text: item?.title ?? '');
-    final day = TextEditingController(text: '${item?.lunarDay ?? 1}');
-    final month = TextEditingController(text: '${item?.lunarMonth ?? 1}');
-    final year = TextEditingController(text: item?.lunarYear?.toString() ?? '');
+    final day = TextEditingController(
+        text:
+            initialType == 'DEATH_ANNIVERSARY' ? '${item?.lunarDay ?? 1}' : '');
+    final month = TextEditingController(
+        text: initialType == 'DEATH_ANNIVERSARY'
+            ? '${item?.lunarMonth ?? 1}'
+            : '');
+    final year = TextEditingController(
+        text: initialType == 'DEATH_ANNIVERSARY'
+            ? item?.lunarYear?.toString() ?? ''
+            : '');
     final place = TextEditingController(text: item?.place ?? '');
     final host = TextEditingController(text: item?.host ?? '');
     final notes = TextEditingController(text: item?.notes ?? '');
-    var type = item?.eventType ?? 'FAMILY_EVENT';
+    var type = initialType;
     var leap = item?.isLeapMonth ?? false;
     int? memberId = item?.relatedMemberId;
     DateTime? solar = item?.originalSolarDate;
     final lang = Localizations.localeOf(context).languageCode;
     final vi = lang == 'vi';
+    final formKey = GlobalKey<FormState>();
+    String? dateError;
     final result = await showDialog<bool>(
         context: context,
         builder: (ctx) => StatefulBuilder(
@@ -74,153 +86,317 @@ class _AnniversaryScreenState extends ConsumerState<AnniversaryScreen> {
                       : (vi ? 'Sửa ngày kỷ niệm' : 'Edit anniversary')),
                   content: SizedBox(
                       width: 440,
-                      child: SingleChildScrollView(
-                          child:
-                              Column(mainAxisSize: MainAxisSize.min, children: [
-                        DropdownButtonFormField<String>(
-                            initialValue: type,
-                            decoration: InputDecoration(
-                                labelText: vi ? 'Loại sự kiện' : 'Event type'),
-                            items: [
-                              DropdownMenuItem(
-                                  value: 'DEATH_ANNIVERSARY',
-                                  child: Text(
-                                      vi ? 'Ngày giỗ' : 'Death anniversary')),
-                              DropdownMenuItem(
-                                  value: 'FAMILY_EVENT',
-                                  child: Text(
-                                      vi ? 'Sự kiện gia đình' : 'Family event'))
-                            ],
-                            onChanged: (v) => update(() => type = v ?? type)),
-                        TextField(
-                            controller: title,
-                            decoration: InputDecoration(
-                                labelText: vi ? 'Tiêu đề' : 'Title')),
-                        if (tree.members.isNotEmpty)
-                          DropdownButtonFormField<int?>(
-                              initialValue: memberId,
-                              isExpanded: true,
-                              decoration: InputDecoration(
-                                  labelText: vi
-                                      ? 'Thành viên liên quan'
-                                      : 'Related family member'),
-                              items: [
-                                DropdownMenuItem<int?>(
-                                    value: null,
-                                    child: Text(vi ? 'Không chọn' : 'None')),
-                                ...tree.members.map((m) =>
-                                    DropdownMenuItem<int?>(
-                                        value: m.id,
-                                        child: Text(m.fullName,
-                                            overflow: TextOverflow.ellipsis)))
-                              ],
-                              onChanged: (v) => update(() => memberId = v)),
-                        Row(children: [
-                          Expanded(
-                              child: TextField(
-                                  controller: day,
-                                  keyboardType: TextInputType.number,
-                                  decoration: InputDecoration(
-                                      labelText:
-                                          vi ? 'Ngày âm' : 'Lunar day'))),
-                          const SizedBox(width: 10),
-                          Expanded(
-                              child: TextField(
-                                  controller: month,
-                                  keyboardType: TextInputType.number,
-                                  decoration: InputDecoration(
-                                      labelText:
-                                          vi ? 'Tháng âm' : 'Lunar month')))
-                        ]),
-                        TextField(
-                            controller: year,
-                            keyboardType: TextInputType.number,
-                            decoration: InputDecoration(
-                                labelText: vi
-                                    ? 'Năm âm gốc (tuỳ chọn)'
-                                    : 'Original lunar year (optional)')),
-                        Align(
-                            alignment: Alignment.centerLeft,
-                            child: TextButton.icon(
-                                onPressed: () async {
-                                  final y = int.tryParse(year.text),
-                                      d = int.tryParse(day.text),
-                                      m = int.tryParse(month.text);
-                                  if (y == null || d == null || m == null) {
-                                    return;
-                                  }
-                                  try {
-                                    final converted = await ref
-                                        .read(anniversaryApiProvider)
-                                        .convert(d, m, y, leap);
-                                    update(() => solar = converted);
-                                  } catch (e) {
-                                    if (ctx.mounted) {
-                                      ScaffoldMessenger.of(ctx).showSnackBar(
-                                          SnackBar(
-                                              content: Text(ApiError.message(e,
-                                                  fallback: vi
-                                                      ? 'Không thể đổi ngày âm.'
-                                                      : 'Could not convert lunar date.'))));
+                      child: Form(
+                          key: formKey,
+                          child: SingleChildScrollView(
+                              child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                MyLifeSelectField<String>(
+                                  label: vi ? 'Loại sự kiện' : 'Event type',
+                                  value: type,
+                                  items: [
+                                    DropdownMenuItem(
+                                        value: 'DEATH_ANNIVERSARY',
+                                        child: Text(vi
+                                            ? 'Ngày giỗ'
+                                            : 'Death anniversary')),
+                                    DropdownMenuItem(
+                                        value: 'FAMILY_EVENT',
+                                        child: Text(vi ? 'Sự kiện' : 'Event')),
+                                  ],
+                                  onChanged: (nextType) {
+                                    if (nextType == null) return;
+                                    update(() {
+                                      type = nextType;
+                                      dateError = null;
+                                      if (nextType == 'FAMILY_EVENT') {
+                                        day.clear();
+                                        month.clear();
+                                        year.clear();
+                                        leap = false;
+                                      } else {
+                                        if (day.text.isEmpty) day.text = '1';
+                                        if (month.text.isEmpty) {
+                                          month.text = '1';
+                                        }
+                                      }
+                                    });
+                                  },
+                                ),
+                                const SizedBox(height: 14),
+                                MyLifeTextField(
+                                  label: vi ? 'Tên sự kiện' : 'Event name',
+                                  controller: title,
+                                  required: true,
+                                  maxLength: 200,
+                                  hint: vi
+                                      ? 'Nhập tên sự kiện'
+                                      : 'Enter an event name',
+                                  validator: (value) {
+                                    final text = value?.trim() ?? '';
+                                    if (text.length < 2 || text.length > 200) {
+                                      return vi
+                                          ? 'Tên cần có từ 2 đến 200 ký tự.'
+                                          : 'Enter 2 to 200 characters.';
                                     }
-                                  }
-                                },
-                                icon: const Icon(Icons.sync),
-                                label: Text(vi
-                                    ? 'Đổi âm sang dương'
-                                    : 'Convert lunar date'))),
-                        SwitchListTile(
-                            contentPadding: EdgeInsets.zero,
-                            title: Text(vi ? 'Tháng nhuận' : 'Leap month'),
-                            value: leap,
-                            onChanged: (v) => update(() => leap = v)),
-                        Align(
-                            alignment: Alignment.centerLeft,
-                            child: TextButton.icon(
-                                onPressed: () async {
-                                  final d = await showDatePicker(
-                                      context: ctx,
-                                      initialDate: solar ?? DateTime.now(),
-                                      firstDate: DateTime(1900),
-                                      lastDate: DateTime(2200));
-                                  if (d != null) update(() => solar = d);
-                                },
-                                icon: const Icon(Icons.calendar_month),
-                                label: Text(solar == null
-                                    ? (vi
-                                        ? 'Ngày dương gốc'
-                                        : 'Original solar date')
-                                    : DateFormat.yMMMd(lang).format(solar!)))),
-                        TextField(
-                            controller: place,
-                            decoration: InputDecoration(
-                                labelText: vi ? 'Địa điểm' : 'Place')),
-                        TextField(
-                            controller: host,
-                            decoration: InputDecoration(
-                                labelText: vi ? 'Người chủ trì' : 'Host')),
-                        TextField(
-                            controller: notes,
-                            maxLines: 2,
-                            decoration: InputDecoration(
-                                labelText: vi ? 'Ghi chú' : 'Notes')),
-                      ]))),
+                                    return null;
+                                  },
+                                ),
+                                if (tree.members.isNotEmpty) ...[
+                                  const SizedBox(height: 14),
+                                  MyLifeSelectField<int?>(
+                                    label: vi
+                                        ? 'Thành viên liên quan'
+                                        : 'Related family member',
+                                    value: memberId,
+                                    hint: vi ? 'Không chọn' : 'None',
+                                    items: [
+                                      DropdownMenuItem<int?>(
+                                          value: null,
+                                          child:
+                                              Text(vi ? 'Không chọn' : 'None')),
+                                      ...tree.members.map((member) =>
+                                          DropdownMenuItem<int?>(
+                                              value: member.id,
+                                              child: Text(member.fullName,
+                                                  overflow:
+                                                      TextOverflow.ellipsis))),
+                                    ],
+                                    onChanged: (value) =>
+                                        update(() => memberId = value),
+                                  ),
+                                ],
+                                const SizedBox(height: 14),
+                                if (type == 'DEATH_ANNIVERSARY') ...[
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: MyLifeTextField(
+                                          label: vi ? 'Ngày âm' : 'Lunar day',
+                                          controller: day,
+                                          required: true,
+                                          keyboardType: TextInputType.number,
+                                          validator: (value) {
+                                            final number =
+                                                int.tryParse(value ?? '');
+                                            if (number == null ||
+                                                number < 1 ||
+                                                number > 30) {
+                                              return vi
+                                                  ? 'Nhập ngày từ 1 đến 30.'
+                                                  : 'Enter a day from 1 to 30.';
+                                            }
+                                            return null;
+                                          },
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: MyLifeTextField(
+                                          label:
+                                              vi ? 'Tháng âm' : 'Lunar month',
+                                          controller: month,
+                                          required: true,
+                                          keyboardType: TextInputType.number,
+                                          validator: (value) {
+                                            final number =
+                                                int.tryParse(value ?? '');
+                                            if (number == null ||
+                                                number < 1 ||
+                                                number > 12) {
+                                              return vi
+                                                  ? 'Nhập tháng từ 1 đến 12.'
+                                                  : 'Enter a month from 1 to 12.';
+                                            }
+                                            return null;
+                                          },
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 14),
+                                  MyLifeTextField(
+                                    label: vi
+                                        ? 'Năm âm gốc'
+                                        : 'Original lunar year',
+                                    controller: year,
+                                    required: true,
+                                    keyboardType: TextInputType.number,
+                                    maxLength: 4,
+                                    validator: (value) {
+                                      final number = int.tryParse(value ?? '');
+                                      if (number == null ||
+                                          number < 1800 ||
+                                          number > 2200) {
+                                        return vi
+                                            ? 'Năm âm phải từ 1800 đến 2200.'
+                                            : 'Lunar year must be from 1800 to 2200.';
+                                      }
+                                      return null;
+                                    },
+                                  ),
+                                  Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: TextButton.icon(
+                                      onPressed: () async {
+                                        final lunarYear =
+                                            int.tryParse(year.text);
+                                        final lunarDay = int.tryParse(day.text);
+                                        final lunarMonth =
+                                            int.tryParse(month.text);
+                                        if (lunarYear == null ||
+                                            lunarDay == null ||
+                                            lunarMonth == null) {
+                                          return;
+                                        }
+                                        try {
+                                          final converted = await ref
+                                              .read(anniversaryApiProvider)
+                                              .convert(lunarDay, lunarMonth,
+                                                  lunarYear, leap);
+                                          update(() {
+                                            solar = converted;
+                                            dateError = null;
+                                          });
+                                        } catch (error) {
+                                          if (ctx.mounted) {
+                                            ScaffoldMessenger.of(ctx)
+                                                .showSnackBar(SnackBar(
+                                                    content: Text(ApiError.message(
+                                                        error,
+                                                        fallback: vi
+                                                            ? 'Không thể đổi ngày âm.'
+                                                            : 'Could not convert lunar date.'))));
+                                          }
+                                        }
+                                      },
+                                      icon: const Icon(Icons.sync, size: 18),
+                                      label: Text(vi
+                                          ? 'Đổi âm sang dương'
+                                          : 'Convert lunar date'),
+                                    ),
+                                  ),
+                                  SwitchListTile.adaptive(
+                                    contentPadding: EdgeInsets.zero,
+                                    title:
+                                        Text(vi ? 'Tháng nhuận' : 'Leap month'),
+                                    value: leap,
+                                    onChanged: (value) =>
+                                        update(() => leap = value),
+                                  ),
+                                  MyLifeDateField(
+                                    label: vi
+                                        ? 'Ngày mất dương lịch'
+                                        : 'Original solar date',
+                                    value: solar,
+                                    required: true,
+                                    errorText: dateError,
+                                    onChanged: (value) => update(() {
+                                      solar = value;
+                                      dateError = null;
+                                    }),
+                                  ),
+                                ] else
+                                  MyLifeDateField(
+                                    label: vi ? 'Ngày sự kiện' : 'Event date',
+                                    value: solar,
+                                    required: true,
+                                    errorText: dateError,
+                                    onChanged: (value) => update(() {
+                                      solar = value;
+                                      dateError = null;
+                                    }),
+                                  ),
+                                const SizedBox(height: 14),
+                                MyLifeTextField(
+                                  label: type == 'DEATH_ANNIVERSARY'
+                                      ? (vi
+                                          ? 'Nơi tổ chức giỗ'
+                                          : 'Memorial location')
+                                      : (vi
+                                          ? 'Địa điểm tổ chức'
+                                          : 'Event location'),
+                                  controller: place,
+                                  maxLength: 500,
+                                  prefixIcon: const Icon(Icons.place_outlined),
+                                ),
+                                const SizedBox(height: 14),
+                                MyLifeTextField(
+                                  label: type == 'DEATH_ANNIVERSARY'
+                                      ? (vi
+                                          ? 'Chủ lễ / Trưởng chi'
+                                          : 'Officiant / Family representative')
+                                      : (vi ? 'Người chủ trì' : 'Host'),
+                                  controller: host,
+                                  maxLength: 300,
+                                  prefixIcon: const Icon(Icons.people_outline),
+                                ),
+                                const SizedBox(height: 14),
+                                MyLifeTextArea(
+                                  label: vi ? 'Ghi chú' : 'Notes',
+                                  controller: notes,
+                                  maxLength: 2000,
+                                  hint: vi
+                                      ? 'Nhập nội dung ghi chú'
+                                      : 'Add a note',
+                                ),
+                              ])))),
                   actions: [
                     TextButton(
                         onPressed: () => Navigator.pop(ctx, false),
                         child: Text(vi ? 'Huỷ' : 'Cancel')),
                     FilledButton(
-                        onPressed: () => Navigator.pop(ctx, true),
+                        onPressed: () {
+                          if (!(formKey.currentState?.validate() ?? false)) {
+                            return;
+                          }
+                          if (solar == null) {
+                            update(() => dateError =
+                                vi ? 'Vui lòng chọn ngày.' : 'Choose a date.');
+                            return;
+                          }
+                          Navigator.pop(ctx, true);
+                        },
                         child: Text(vi ? 'Lưu' : 'Save'))
                   ],
                 )));
     if (result == true && mounted) {
-      final d = int.tryParse(day.text) ?? 0,
-          m = int.tryParse(month.text) ?? 0,
-          y = int.tryParse(year.text);
       try {
-        final next =
-            await ref.read(anniversaryApiProvider).nextOccurrence(d, m, leap);
+        final isDeathAnniversary = type == 'DEATH_ANNIVERSARY';
+        final d = isDeathAnniversary ? int.parse(day.text) : null;
+        final m = isDeathAnniversary ? int.parse(month.text) : null;
+        final y = isDeathAnniversary ? int.parse(year.text) : null;
+        late final DateTime nextSolarDate;
+        late final int daysUntil;
+        int? nextLunarYear;
+        if (isDeathAnniversary) {
+          final next = await ref
+              .read(anniversaryApiProvider)
+              .nextOccurrence(d!, m!, leap);
+          nextSolarDate = DateTime.parse(next['nextSolarDate'] as String);
+          daysUntil = (next['daysUntil'] as num).toInt();
+          nextLunarYear = (next['nextLunarYear'] as num).toInt();
+        } else {
+          final eventDate = solar!;
+          final current = DateTime.now();
+          final today = DateTime(current.year, current.month, current.day);
+          DateTime nextDateForYear(int targetYear) {
+            final lastDay =
+                DateUtils.getDaysInMonth(targetYear, eventDate.month);
+            return DateTime(targetYear, eventDate.month,
+                eventDate.day > lastDay ? lastDay : eventDate.day);
+          }
+
+          var candidate = nextDateForYear(today.year);
+          if (candidate.isBefore(today)) {
+            candidate = nextDateForYear(today.year + 1);
+          }
+          nextSolarDate = candidate;
+          daysUntil = candidate.difference(today).inDays;
+        }
         final event = FamilyAnniversary(
             id: item?.id ?? 0,
             eventType: type,
@@ -231,12 +407,12 @@ class _AnniversaryScreenState extends ConsumerState<AnniversaryScreen> {
             relatedMemberRole: item?.relatedMemberRole,
             lunarDay: d,
             lunarMonth: m,
-            isLeapMonth: leap,
+            isLeapMonth: isDeathAnniversary && leap,
             originalSolarDate: solar,
             lunarYear: y,
-            nextLunarYear: (next['nextLunarYear'] as num).toInt(),
-            nextSolarDate: DateTime.parse(next['nextSolarDate'] as String),
-            daysUntil: (next['daysUntil'] as num).toInt(),
+            nextLunarYear: nextLunarYear,
+            nextSolarDate: nextSolarDate,
+            daysUntil: daysUntil,
             place: place.text,
             host: host.text,
             notes: notes.text);
@@ -255,6 +431,25 @@ class _AnniversaryScreenState extends ConsumerState<AnniversaryScreen> {
     place.dispose();
     host.dispose();
     notes.dispose();
+  }
+
+  String _eventSubtitle(FamilyAnniversary event, String lang, bool vi) {
+    final details = <String>[
+      if (event.relatedMemberName != null) event.relatedMemberName!,
+      DateFormat.yMMMd(lang).format(event.nextSolarDate),
+      if (event.place != null)
+        '${vi ? 'Địa điểm' : 'Location'}: ${event.place}',
+      '${vi ? 'Còn' : 'In'} ${event.daysUntil} ${vi ? 'ngày' : 'days'}',
+      if (event.eventType == 'DEATH_ANNIVERSARY' &&
+          event.lunarDay != null &&
+          event.lunarMonth != null)
+        '${vi ? 'Âm lịch' : 'Lunar'} ${event.lunarDay}/${event.lunarMonth}${event.isLeapMonth ? '*' : ''}${event.lunarYear == null ? '' : ' · ${vi ? 'Năm gốc' : 'Original year'} ${event.lunarYear}'}',
+      if (event.originalSolarDate != null)
+        '${vi ? 'Ngày dương gốc' : 'Original solar date'} ${DateFormat.yMd(lang).format(event.originalSolarDate!)}',
+      if (event.host != null) '${vi ? 'Chủ trì' : 'Host'}: ${event.host}',
+      if (event.notes != null) event.notes!,
+    ];
+    return details.join('\n');
   }
 
   @override
@@ -379,9 +574,8 @@ class _AnniversaryScreenState extends ConsumerState<AnniversaryScreen> {
                                       : Icons.celebration,
                                   color: AppColors.accentGoldDark)),
                           title: Text(e.title),
-                          subtitle: Text(
-                              '${e.relatedMemberName ?? ''}${e.relatedMemberName == null ? '' : ' · '}${DateFormat.yMMMd(lang).format(e.nextSolarDate)}${e.place == null ? '' : ' · ${e.place}'}\n${vi ? 'Còn' : 'In'} ${e.daysUntil} ${vi ? 'ngày' : 'days'} · ${vi ? 'Âm lịch' : 'Lunar'} ${e.lunarDay}/${e.lunarMonth}${e.isLeapMonth ? '*' : ''}${e.lunarYear == null ? '' : ' · ${vi ? 'Năm gốc' : 'Original year'} ${e.lunarYear}'}${e.originalSolarDate == null ? '' : ' · ${vi ? 'Dương lịch gốc' : 'Original solar'} ${DateFormat.yMd(lang).format(e.originalSolarDate!)}'}${e.host == null ? '' : ' · ${vi ? 'Chủ trì' : 'Host'} ${e.host}'}${e.notes == null ? '' : ' · ${e.notes}'}',
-                              maxLines: 4),
+                          subtitle:
+                              Text(_eventSubtitle(e, lang, vi), maxLines: 4),
                           isThreeLine: true,
                           trailing: PopupMenuButton<String>(
                               onSelected: (v) async {
