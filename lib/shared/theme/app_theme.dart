@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'app_colors.dart';
+import 'mylife_design_tokens.dart';
 
 class AppTheme {
   static ThemeData get darkTheme {
@@ -52,19 +53,24 @@ class AppTheme {
           side: const BorderSide(color: AppColors.borderSubtle, width: 1.0),
         ),
       ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: AppColors.secondaryBg,
+        indicatorColor: AppColors.accentGold.withValues(alpha: .16),
+        height: 68,
+      ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surfaceBg,
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(MyLifeDesign.inputRadius),
           borderSide: const BorderSide(color: AppColors.borderSubtle),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(MyLifeDesign.inputRadius),
           borderSide: const BorderSide(color: AppColors.borderSubtle),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(MyLifeDesign.inputRadius),
           borderSide: const BorderSide(color: AppColors.accentGold, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
@@ -112,7 +118,8 @@ class AppTheme {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: AppColors.borderSubtleLight, width: 1.0),
+          side:
+              const BorderSide(color: AppColors.borderSubtleLight, width: 1.0),
         ),
       ),
       drawerTheme: const DrawerThemeData(
@@ -123,8 +130,14 @@ class AppTheme {
         backgroundColor: AppColors.primaryBgLight,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
-          side: const BorderSide(color: AppColors.borderSubtleLight, width: 1.0),
+          side:
+              const BorderSide(color: AppColors.borderSubtleLight, width: 1.0),
         ),
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: AppColors.secondaryBgLight,
+        indicatorColor: AppColors.accentGoldLightMode.withValues(alpha: .12),
+        height: 68,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -139,7 +152,8 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: AppColors.accentGoldLightMode, width: 1.5),
+          borderSide: const BorderSide(
+              color: AppColors.accentGoldLightMode, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),

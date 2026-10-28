@@ -1,22 +1,24 @@
 import 'package:flutter/material.dart';
+import 'mylife_design_tokens.dart';
 
 class AppColors {
   // Dark Backgrounds matching Web (index.css)
-  static const Color primaryBg = Color(0xFF0A0A0A);     // var(--primary-bg) in dark mode
-  static const Color secondaryBg = Color(0xFF121212);   // var(--secondary-bg) in dark mode
-  static const Color cardBg = Color(0xFF141414);        // Card background
-  static const Color glassBg = Color(0xF2121212);       // 95% opacity dark glass
-  static const Color surfaceBg = Color(0xFF1E1E1E);     // Input / Container surface
+  static const Color primaryBg = MyLifeDesign.canvasDark;
+  static const Color secondaryBg = MyLifeDesign.surfaceDark;
+  static const Color cardBg = MyLifeDesign.surfaceDark;
+  static const Color glassBg = Color(0xF2191B17);
+  static const Color surfaceBg = MyLifeDesign.raisedDark;
 
   // Light Backgrounds matching Web (index.css)
-  static const Color primaryBgLight = Color(0xFFFFFFFF);
-  static const Color secondaryBgLight = Color(0xFFF9F9F9);
-  static const Color cardBgLight = Color(0xFFFFFFFF);
-  static const Color surfaceBgLight = Color(0xFFF2F2F2);
+  static const Color primaryBgLight = MyLifeDesign.canvasLight;
+  static const Color secondaryBgLight = MyLifeDesign.surfaceLight;
+  static const Color cardBgLight = MyLifeDesign.surfaceLight;
+  static const Color surfaceBgLight = Color(0xFFEDE9DF);
   static const Color borderSubtleLight = Color(0xFFEAEAEA);
   static const Color textPrimaryLight = Color(0xFF111111);
   static const Color textSecondaryLight = Color(0xFF666666);
-  static const Color accentGoldLightMode = Color(0xFFB58900); // Darker gold for light mode
+  static const Color accentGoldLightMode =
+      Color(0xFFB58900); // Darker gold for light mode
 
   // Shared form field colors map to the web --field-* tokens in Frontend-MyLife/src/index.css.
   static const Color fieldBackgroundDark = Color(0xFF111111);
@@ -51,19 +53,19 @@ class AppColors {
   static const Color accentPurple = Color(0xFFD4AF37);
 
   // Statuses
-  static const Color success = Color(0xFF22C55E);       // #22c55e
-  static const Color warning = Color(0xFFF59E0B);       // #f59e0b
-  static const Color error = Color(0xFFEF4444);         // #ef4444
+  static const Color success = Color(0xFF22C55E); // #22c55e
+  static const Color warning = Color(0xFFF59E0B); // #f59e0b
+  static const Color error = Color(0xFFEF4444); // #ef4444
 
   // Texts matching Web
-  static const Color textPrimary = Color(0xFFFFFFFF);   // #ffffff
+  static const Color textPrimary = Color(0xFFFFFFFF); // #ffffff
   static const Color textSecondary = Color(0xFF9E9E9E); // #9e9e9e
-  static const Color textMuted = Color(0xFF666666);     // #666666
+  static const Color textMuted = Color(0xFF666666); // #666666
 
   // Borders & Dividers matching Web
-  static const Color borderSubtle = Color(0xFF1E1E1E);  // #1e1e1e
+  static const Color borderSubtle = Color(0xFF1E1E1E); // #1e1e1e
   static const Color borderHighlight = Color(0xFFE5C158); // #e5c158
-  static const Color borderMedium = Color(0xFF2E2E2E);  // #2e2e2e
+  static const Color borderMedium = Color(0xFF2E2E2E); // #2e2e2e
 
   // Gradients
   static const LinearGradient goldGradient = LinearGradient(

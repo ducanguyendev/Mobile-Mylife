@@ -1,6 +1,6 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -11,6 +11,7 @@ import '../../auth/providers/auth_state.dart';
 import '../models/family_member_model.dart';
 import '../providers/family_tree_provider.dart';
 import '../services/family_tree_api_service.dart';
+import 'family_member_profile_screen.dart';
 import '../widgets/member_form_bottom_sheet.dart';
 
 class FamilyTreeScreen extends ConsumerStatefulWidget {
@@ -24,7 +25,7 @@ class _FamilyTreeScreenState extends ConsumerState<FamilyTreeScreen> {
   final _search = TextEditingController();
   String _query = '';
   int? _generation;
-  bool _cardView = false;
+  String _viewMode = 'list';
   final Map<int, Future<Uint8List>> _avatarFutures = {};
 
   @override
@@ -106,228 +107,34 @@ class _FamilyTreeScreenState extends ConsumerState<FamilyTreeScreen> {
   }
 
   Future<void> _showDetails(FamilyMember member) async {
-    final vi = Localizations.localeOf(context).languageCode == 'vi';
-    final members = ref.read(familyTreeProvider).members;
-    final biologicalSiblings = members
-        .where((candidate) => _isBiologicalSibling(member, candidate))
-        .toList(growable: false);
-    final cousinSiblings = members
-        .where((candidate) =>
-            candidate.id != member.id &&
-            !_isBiologicalSibling(member, candidate) &&
-            _hasExplicitSiblingRelation(member, candidate))
-        .toList(growable: false);
-    final otherRelations = member.horizontalRelations
-        .where((relation) =>
-            relation.relationType.trim().toLowerCase() != 'sibling')
-        .map((relation) =>
-            '${_nameForId(relation.memberId)} (${relation.relationType})')
-        .join('\n');
-
-    await showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        showDragHandle: true,
-        builder: (ctx) => SafeArea(
-            child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: SingleChildScrollView(
-                    child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                      Center(child: _memberAvatar(member, true, radius: 42)),
-                      const SizedBox(height: 10),
-                      Center(
-                          child: Text(member.fullName,
-                              style: Theme.of(ctx)
-                                  .textTheme
-                                  .titleLarge
-                                  ?.copyWith(fontWeight: FontWeight.bold))),
-                      Center(
-                          child: Text(
-                              '${vi ? 'Đời' : 'Generation'} ${member.generation} · ${member.lifeStatus == 'DECEASED' ? (vi ? 'Đã mất' : 'Deceased') : (vi ? 'Còn sống' : 'Living')}')),
-                      const Divider(height: 24),
-                      _detail(vi ? 'Giới tính' : 'Gender', member.gender),
-                      _detail(vi ? 'Ngày sinh' : 'Date of birth',
-                          member.dateOfBirth),
-                      _detail(
-                          vi ? 'Ngày mất' : 'Date of death', member.deathDate),
-                      _detail(vi ? 'Vai trò' : 'Role', member.role),
-                      _detail(vi ? 'Điện thoại' : 'Phone', member.phoneNumber),
-                      _detail(vi ? 'Địa chỉ' : 'Address', member.address),
-                      _detail(vi ? 'Tiểu sử' : 'Biography', member.biography),
-                      _detail(vi ? 'Cha' : 'Father', member.fatherName),
-                      _detail(vi ? 'Mẹ' : 'Mother', member.motherName),
-                      _detail(vi ? 'Vợ/chồng' : 'Spouse', member.spouseName),
-                      _detail(vi ? 'Con' : 'Children',
-                          member.childNames.join(', ')),
-                      _detail(
-                          vi ? 'Anh/Chị/Em ruột' : 'Full siblings',
-                          _formatSiblingList(
-                              member, biologicalSiblings, vi, true)),
-                      _detail(
-                          vi ? 'Anh/Chị/Em họ' : 'Cousins',
-                          _formatSiblingList(
-                              member, cousinSiblings, vi, false)),
-                      _detail(vi ? 'Quan hệ khác' : 'Other relations',
-                          otherRelations),
-                      Wrap(spacing: 8, children: [
-                        OutlinedButton.icon(
-                            onPressed: () async {
-                              final image = await ImagePicker().pickImage(
-                                  source: ImageSource.gallery,
-                                  maxWidth: 1024,
-                                  maxHeight: 1024,
-                                  imageQuality: 82);
-                              if (image == null) return;
-                              final done = await ref
-                                  .read(familyTreeProvider.notifier)
-                                  .uploadAvatar(member.id, File(image.path));
-                              if (ctx.mounted && done) {
-                                _avatarFutures.remove(member.id);
-                                Navigator.pop(ctx);
-                              }
-                            },
-                            icon: const Icon(Icons.photo_camera_outlined),
-                            label: Text(vi ? 'Đổi ảnh' : 'Upload avatar')),
-                        if (member.avatarUrl?.isNotEmpty == true)
-                          OutlinedButton.icon(
-                              onPressed: () async {
-                                final done = await ref
-                                    .read(familyTreeProvider.notifier)
-                                    .deleteAvatar(member.id);
-                                if (ctx.mounted && done) {
-                                  _avatarFutures.remove(member.id);
-                                  Navigator.pop(ctx);
-                                }
-                              },
-                              icon: const Icon(Icons.delete_outline),
-                              label: Text(vi ? 'Xoá ảnh' : 'Delete avatar'))
-                      ]),
-                    ])))));
+    await Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => FamilyMemberProfileScreen(
+        member: member,
+        onEdit: () {
+          Navigator.of(context).pop();
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) _showMemberForm(member: member);
+          });
+        },
+        onUploadAvatar: () async {
+          final image = await ImagePicker().pickImage(
+            source: ImageSource.gallery,
+            maxWidth: 1024,
+            maxHeight: 1024,
+            imageQuality: 82,
+          );
+          if (image == null || !mounted) return;
+          final done = await ref
+              .read(familyTreeProvider.notifier)
+              .uploadAvatar(member.id, File(image.path));
+          if (done && mounted) {
+            _avatarFutures.remove(member.id);
+            setState(() {});
+          }
+        },
+      ),
+    ));
   }
-
-  bool _isBiologicalSibling(FamilyMember current, FamilyMember other) {
-    if (current.id == other.id) return false;
-    final sameFather = current.fatherId != null &&
-        current.fatherId! > 0 &&
-        current.fatherId == other.fatherId;
-    final sameMother = current.motherId != null &&
-        current.motherId! > 0 &&
-        current.motherId == other.motherId;
-    return sameFather || sameMother;
-  }
-
-  bool _hasExplicitSiblingRelation(FamilyMember current, FamilyMember other) {
-    bool hasSiblingLink(FamilyMember from, int toId) =>
-        from.horizontalRelations.any((relation) =>
-            relation.memberId == toId &&
-            relation.relationType.trim().toLowerCase() == 'sibling');
-
-    return hasSiblingLink(current, other.id) ||
-        hasSiblingLink(other, current.id);
-  }
-
-  DateTime? _parseBirthDate(String? value) {
-    final text = value?.trim();
-    if (text == null || text.isEmpty) return null;
-    return DateTime.tryParse(text);
-  }
-
-  String _siblingLabel(
-    FamilyMember current,
-    FamilyMember other,
-    bool vi,
-    bool biological,
-  ) {
-    final currentBirth = _parseBirthDate(current.dateOfBirth);
-    final otherBirth = _parseBirthDate(other.dateOfBirth);
-    if (currentBirth == null ||
-        otherBirth == null ||
-        currentBirth.isAtSameMomentAs(otherBirth)) {
-      if (vi) {
-        return biological ? 'Anh / Chị / Em ruột' : 'Anh / Chị / Em họ';
-      }
-      return biological ? 'Sibling' : 'Cousin';
-    }
-
-    final older = otherBirth.isBefore(currentBirth);
-    final gender = other.gender?.trim().toLowerCase();
-    final male = gender == 'male' || gender == 'nam';
-    final female = gender == 'female' || gender == 'nữ' || gender == 'nu';
-
-    if (vi) {
-      if (biological) {
-        if (older) {
-          if (male) return 'Anh ruột';
-          if (female) return 'Chị ruột';
-          return 'Anh / Chị ruột';
-        }
-        if (male) return 'Em trai ruột';
-        if (female) return 'Em gái ruột';
-        return 'Em ruột';
-      }
-
-      if (older) {
-        if (male) return 'Anh họ';
-        if (female) return 'Chị họ';
-        return 'Anh / Chị họ';
-      }
-      if (male) return 'Em trai họ';
-      if (female) return 'Em gái họ';
-      return 'Em họ';
-    }
-
-    if (biological) {
-      if (older) {
-        if (male) return 'Older brother';
-        if (female) return 'Older sister';
-        return 'Older sibling';
-      }
-      if (male) return 'Younger brother';
-      if (female) return 'Younger sister';
-      return 'Younger sibling';
-    }
-
-    if (older) {
-      if (male) return 'Older male cousin';
-      if (female) return 'Older female cousin';
-      return 'Older cousin';
-    }
-    if (male) return 'Younger male cousin';
-    if (female) return 'Younger female cousin';
-    return 'Younger cousin';
-  }
-
-  String _formatSiblingList(
-    FamilyMember current,
-    List<FamilyMember> siblings,
-    bool vi,
-    bool biological,
-  ) {
-    if (siblings.isEmpty) return '';
-    return siblings
-        .map((sibling) =>
-            '• ${sibling.fullName} — ${_siblingLabel(current, sibling, vi, biological)}')
-        .join('\n');
-  }
-
-  String _nameForId(int id) {
-    for (final m in ref.read(familyTreeProvider).members) {
-      if (m.id == id) return m.fullName;
-    }
-    return '$id';
-  }
-
-  Widget _detail(String label, String? value) => Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
-      child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        SizedBox(
-            width: 110,
-            child: Text(label,
-                style: const TextStyle(fontWeight: FontWeight.w700))),
-        Expanded(child: Text(value?.isNotEmpty == true ? value! : '—'))
-      ]));
 
   Widget _memberListItem(FamilyMember member, bool isDark, bool vi) {
     final secondary =
@@ -632,14 +439,30 @@ class _FamilyTreeScreenState extends ConsumerState<FamilyTreeScreen> {
                                 value: g.id, child: Text(g.title ?? g.name)))
                       ],
                       onChanged: (v) => setState(() => _generation = v))),
-              IconButton(
-                  tooltip: _cardView
-                      ? (vi ? 'Dạng danh sách' : 'List view')
-                      : (vi ? 'Dạng thẻ' : 'Card view'),
-                  onPressed: () => setState(() => _cardView = !_cardView),
-                  icon: Icon(
-                      _cardView ? Icons.view_list : Icons.grid_view_rounded))
             ]),
+            const SizedBox(height: 10),
+            SegmentedButton<String>(
+              showSelectedIcon: false,
+              segments: [
+                ButtonSegment(
+                    value: 'tree',
+                    icon: const Icon(Icons.account_tree_outlined),
+                    label: Text(vi ? 'Cây' : 'Tree')),
+                ButtonSegment(
+                    value: 'cards',
+                    icon: const Icon(Icons.grid_view_rounded),
+                    label: Text(vi ? 'Thẻ' : 'Cards')),
+                ButtonSegment(
+                    value: 'list',
+                    icon: const Icon(Icons.view_list_rounded),
+                    label: Text(vi ? 'Danh sách' : 'List')),
+              ],
+              selected: {_viewMode},
+              onSelectionChanged: (value) {
+                HapticFeedback.selectionClick();
+                setState(() => _viewMode = value.first);
+              },
+            ),
             if (familyTree.isLoading || familyTree.isMutating)
               const Padding(
                 padding: EdgeInsets.only(bottom: 12),
@@ -647,7 +470,9 @@ class _FamilyTreeScreenState extends ConsumerState<FamilyTreeScreen> {
               ),
             if (familyTree.members.isEmpty)
               _emptyTree(isDark)
-            else if (_cardView)
+            else if (_viewMode == 'tree')
+              _buildTree(matching, isDark, vi)
+            else if (_viewMode == 'cards')
               _buildCards(matching, isDark, vi)
             else
               ...matching.map((member) => _memberListItem(member, isDark, vi))
@@ -685,12 +510,66 @@ class _FamilyTreeScreenState extends ConsumerState<FamilyTreeScreen> {
               runSpacing: spacing,
               children: generationMembers
                   .map((member) => SizedBox(
-                      width: cardWidth,
-                      child: _memberCard(member, isDark, vi)))
+                      width: cardWidth, child: _memberCard(member, isDark, vi)))
                   .toList(growable: false));
         }),
       ],
     ]);
+  }
+
+  Widget _buildTree(List<FamilyMember> members, bool isDark, bool vi) {
+    final generations =
+        members.map((member) => member.generation).toSet().toList()..sort();
+    final allMembers = ref.read(familyTreeProvider).members;
+    final widestGeneration = generations
+        .map((generation) =>
+            members.where((member) => member.generation == generation).length)
+        .fold<int>(1, (widest, count) => count > widest ? count : widest);
+    return Container(
+      height: 380,
+      margin: const EdgeInsets.only(top: 14),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF171A16) : const Color(0xFFEDEDE5),
+        borderRadius: BorderRadius.circular(22),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InteractiveViewer(
+        minScale: .55,
+        maxScale: 2.4,
+        boundaryMargin: const EdgeInsets.all(100),
+        child: SizedBox(
+          width: (widestGeneration * 150).toDouble(),
+          height: (generations.length.clamp(1, 5) * 116).toDouble(),
+          child: Stack(children: [
+            Positioned.fill(
+                child: CustomPaint(
+                    painter: _TreeConnectionPainter(
+                        members: members,
+                        allMembers: allMembers,
+                        generations: generations,
+                        isDark: isDark))),
+            for (var gi = 0; gi < generations.length; gi++)
+              for (var mi = 0;
+                  mi <
+                      members
+                          .where((m) => m.generation == generations[gi])
+                          .length;
+                  mi++)
+                _TreeNode(
+                  member: members
+                      .where((m) => m.generation == generations[gi])
+                      .elementAt(mi),
+                  left: 18 + mi * 150,
+                  top: 14 + gi * 116,
+                  isDark: isDark,
+                  onTap: () => _showDetails(members
+                      .where((m) => m.generation == generations[gi])
+                      .elementAt(mi)),
+                ),
+          ]),
+        ),
+      ),
+    );
   }
 
   Widget _emptyTree(bool isDark) {
@@ -722,4 +601,103 @@ class _FamilyTreeScreenState extends ConsumerState<FamilyTreeScreen> {
       ),
     );
   }
+}
+
+class _TreeNode extends StatelessWidget {
+  const _TreeNode(
+      {required this.member,
+      required this.left,
+      required this.top,
+      required this.isDark,
+      required this.onTap});
+  final FamilyMember member;
+  final double left, top;
+  final bool isDark;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) => Positioned(
+        left: left,
+        top: top,
+        child: SizedBox(
+            width: 128,
+            child: Material(
+              color: isDark ? const Color(0xFF242820) : Colors.white,
+              borderRadius: BorderRadius.circular(18),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(18),
+                onTap: onTap,
+                child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 9, vertical: 11),
+                    child: Column(children: [
+                      CircleAvatar(
+                          radius: 21,
+                          backgroundColor:
+                              const Color(0xFF78866B).withValues(alpha: .2),
+                          child: Text(
+                              member.fullName.trim().isEmpty
+                                  ? '?'
+                                  : member.fullName
+                                      .trim()
+                                      .characters
+                                      .first
+                                      .toUpperCase(),
+                              style: const TextStyle(
+                                  color: Color(0xFF78866B),
+                                  fontWeight: FontWeight.w800))),
+                      const SizedBox(height: 7),
+                      Text(member.fullName,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                              fontSize: 11, fontWeight: FontWeight.w700)),
+                      Text('Đời ${member.generation}',
+                          style: Theme.of(context).textTheme.labelSmall),
+                    ])),
+              ),
+            )),
+      );
+}
+
+class _TreeConnectionPainter extends CustomPainter {
+  const _TreeConnectionPainter(
+      {required this.members,
+      required this.allMembers,
+      required this.generations,
+      required this.isDark});
+  final List<FamilyMember> members, allMembers;
+  final List<int> generations;
+  final bool isDark;
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = (isDark ? const Color(0xFF78866B) : const Color(0xFF8A987C))
+          .withValues(alpha: .55)
+      ..strokeWidth = 1.5;
+    final positions = <int, Offset>{};
+    for (var gi = 0; gi < generations.length; gi++) {
+      final row =
+          members.where((m) => m.generation == generations[gi]).toList();
+      for (var mi = 0; mi < row.length; mi++) {
+        positions[row[mi].id] = Offset(18 + mi * 150 + 64, 14 + gi * 116 + 72);
+      }
+    }
+    for (final child in members) {
+      final childPosition = positions[child.id];
+      if (childPosition == null) continue;
+      for (final parentId
+          in [child.fatherId, child.motherId].whereType<int>()) {
+        final parentPosition = positions[parentId];
+        if (parentPosition != null) {
+          canvas.drawLine(parentPosition.translate(0, 24),
+              childPosition.translate(0, -23), paint);
+        }
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _TreeConnectionPainter oldDelegate) =>
+      members != oldDelegate.members || isDark != oldDelegate.isDark;
 }

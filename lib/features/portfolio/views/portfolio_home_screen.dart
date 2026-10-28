@@ -14,7 +14,7 @@ import '../widgets/hero_section.dart';
 import '../widgets/projects_section.dart';
 import '../widgets/skills_section.dart';
 import '../widgets/stats_section.dart';
-import '../../my_life/views/my_life_hub_screen.dart';
+import '../../main_navigation_screen.dart';
 
 class PortfolioHomeScreen extends ConsumerWidget {
   const PortfolioHomeScreen({super.key});
@@ -53,7 +53,7 @@ class PortfolioHomeScreen extends ConsumerWidget {
                 onPressed: () => Navigator.push(
                     context,
                     MaterialPageRoute(
-                        builder: (_) => const MyLifeHubScreen()))),
+                        builder: (_) => const MainNavigationScreen()))),
           // Khi đã đăng nhập: Hiển thị avatar tròn clickable mở màn hình Hồ sơ
           if (authState.isAuthenticated && user != null)
             GestureDetector(

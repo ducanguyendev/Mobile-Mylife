@@ -1,9 +1,11 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../shared/api/api_error.dart';
 import '../../../shared/theme/app_colors.dart';
+import '../../../shared/theme/mylife_design_tokens.dart';
 import '../models/library_models.dart';
 import '../providers/library_provider.dart';
 import '../services/library_api_service.dart';
@@ -290,22 +292,21 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                                   label:
                                       Text(_vi ? 'Tạo album' : 'Create album'))
                             ]))),
-                      if (list.isNotEmpty)
+                      if (list.isNotEmpty) ...[
                         SizedBox(
-                            height: 58,
+                            height: 178,
                             child: ListView(
                                 scrollDirection: Axis.horizontal,
                                 children: list
-                                    .map((a) => Padding(
-                                        padding:
-                                            const EdgeInsets.only(right: 8),
-                                        child: ChoiceChip(
-                                            label: Text(
-                                                '${a.name} · ${a.photoCount}'),
-                                            selected: _selected == a.id,
-                                            onSelected: (_) => setState(
-                                                () => _selected = a.id))))
+                                    .map((a) => _AlbumCoverCard(
+                                          album: a,
+                                          selected: _selected == a.id,
+                                          onTap: () =>
+                                              setState(() => _selected = a.id),
+                                        ))
                                     .toList())),
+                        const SizedBox(height: 16),
+                      ],
                       if (selected != null) ...[
                         Row(children: [
                           Expanded(
@@ -399,6 +400,84 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
                             child:
                                 Image.memory(s.data!, fit: BoxFit.contain)))));
   }
+}
+
+class _AlbumCoverCard extends StatelessWidget {
+  const _AlbumCoverCard(
+      {required this.album, required this.selected, required this.onTap});
+  final LibraryAlbum album;
+  final bool selected;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext context) {
+    final cover = album.photos
+            .where((photo) => photo.id == album.coverPhotoId)
+            .firstOrNull ??
+        album.photos.firstOrNull;
+    return Padding(
+      padding: const EdgeInsets.only(right: 10),
+      child: SizedBox(
+          width: 150,
+          child: Material(
+            color: Theme.of(context).colorScheme.surfaceContainerLow,
+            clipBehavior: Clip.antiAlias,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            child: InkWell(
+                onTap: onTap,
+                borderRadius: BorderRadius.circular(20),
+                child: Stack(fit: StackFit.expand, children: [
+                  if (cover?.url.isNotEmpty == true)
+                    CachedNetworkImage(
+                        imageUrl: cover!.url,
+                        fit: BoxFit.cover,
+                        errorWidget: (_, __, ___) => _fallback(context))
+                  else
+                    _fallback(context),
+                  DecoratedBox(
+                      decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                        Colors.transparent,
+                        Colors.black.withValues(alpha: .78)
+                      ]))),
+                  Positioned(
+                      left: 12,
+                      right: 10,
+                      bottom: 12,
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(album.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800)),
+                            Text(
+                                '${album.photoCount} ${album.photoCount == 1 ? 'photo' : 'photos'}',
+                                style: const TextStyle(
+                                    color: Colors.white70, fontSize: 11)),
+                          ])),
+                  if (selected)
+                    Positioned.fill(
+                        child: DecoratedBox(
+                            decoration: BoxDecoration(
+                                border: Border.all(
+                                    color: MyLifeDesign.amber, width: 3),
+                                borderRadius: BorderRadius.circular(20)))),
+                ])),
+          )),
+    );
+  }
+
+  Widget _fallback(BuildContext context) => Container(
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
+      child: const Center(
+          child: Icon(Icons.photo_outlined,
+              size: 36, color: MyLifeDesign.violet)));
 }
 
 class _PhotoTile extends ConsumerWidget {
