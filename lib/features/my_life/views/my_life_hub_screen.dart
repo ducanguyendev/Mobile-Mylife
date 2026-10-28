@@ -5,14 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/theme/mylife_design_tokens.dart';
 import '../../anniversary/models/family_anniversary.dart';
 import '../../anniversary/providers/anniversary_provider.dart';
-import '../../anniversary/views/anniversary_screen.dart';
-import '../../family_map/views/family_map_screen.dart';
 import '../../family_tree/providers/family_tree_provider.dart';
-import '../../family_tree/views/family_tree_screen.dart';
-import 'family_timeline_screen.dart';
+import '../../main_navigation/family_shell_screen.dart';
+import '../../main_navigation/memories_shell_screen.dart';
 import '../../library/models/library_models.dart';
 import '../../library/providers/library_provider.dart';
-import '../../library/views/library_screen.dart';
 
 class MyLifeHubScreen extends ConsumerStatefulWidget {
   const MyLifeHubScreen({super.key});
@@ -44,23 +41,19 @@ class _MyLifeHubScreenState extends ConsumerState<MyLifeHubScreen> {
         ref.watch(anniversaryProvider).valueOrNull ?? const [];
     final albums = ref.watch(libraryProvider).valueOrNull ?? const [];
     final todayItems = _todayItems(anniversaries);
+    final upcomingItems = anniversaries
+        .where((item) => item.daysUntil > 0)
+        .toList()
+      ..sort((a, b) => a.daysUntil.compareTo(b.daysUntil));
     final recentPhoto = _recentCover(albums);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          SliverAppBar.large(
+          const SliverAppBar.large(
             pinned: true,
-            title: const Text('MyLife'),
-            actions: [
-              IconButton(
-                tooltip: vi ? 'Gia phả' : 'Family tree',
-                onPressed: () => _open(context, const FamilyTreeScreen()),
-                icon: const Icon(Icons.account_tree_outlined),
-              ),
-              const SizedBox(width: 8),
-            ],
+            title: Text('MyLife'),
           ),
           SliverPadding(
             padding: const EdgeInsets.fromLTRB(20, 4, 20, 32),
@@ -80,7 +73,7 @@ class _MyLifeHubScreenState extends ConsumerState<MyLifeHubScreen> {
                 error: tree.errorMessage,
                 isDark: isDark,
                 vi: vi,
-                onTap: () => _open(context, const FamilyTreeScreen()),
+                onTap: () => _open(context, const FamilyShellScreen()),
               ),
               const SizedBox(height: 30),
               _SectionHeading(
@@ -89,68 +82,52 @@ class _MyLifeHubScreenState extends ConsumerState<MyLifeHubScreen> {
                     todayItems.isEmpty ? null : (vi ? 'Xem lịch' : 'Calendar'),
                 onAction: todayItems.isEmpty
                     ? null
-                    : () => _open(context, const AnniversaryScreen()),
+                    : () => _open(
+                        context, const MemoriesShellScreen(initialIndex: 1)),
               ),
               const SizedBox(height: 12),
               if (todayItems.isEmpty)
                 _QuietDay(vi: vi)
               else
-                ...todayItems.map((item) => _TodayItem(item: item, vi: vi)),
+                ...todayItems.map((item) => _TodayItem(
+                    item: item,
+                    vi: vi,
+                    onTap: () => _open(
+                        context,
+                        MemoriesShellScreen(
+                            initialIndex: 1, initialAnniversaryId: item.id)))),
               const SizedBox(height: 30),
-              _SectionHeading(
-                  title: vi ? 'Không gian gia đình' : 'Family spaces'),
-              const SizedBox(height: 12),
-              _FamilySpaceTile(
-                title: vi ? 'Gia phả' : 'Family tree',
-                subtitle: vi
-                    ? 'Các thế hệ và chân dung'
-                    : 'Generations and portraits',
-                icon: Icons.account_tree_rounded,
-                accent: MyLifeDesign.sage,
-                onTap: () => _open(context, const FamilyTreeScreen()),
-              ),
-              const SizedBox(height: 10),
-              _FamilySpaceTile(
-                title: vi ? 'Ngày giỗ & kỷ niệm' : 'Anniversaries',
-                subtitle: vi
-                    ? 'Những ngày gia đình cùng nhớ'
-                    : 'Dates your family remembers',
-                icon: Icons.event_note_rounded,
-                accent: MyLifeDesign.amber,
-                onTap: () => _open(context, const AnniversaryScreen()),
-              ),
-              const SizedBox(height: 10),
-              _FamilySpaceTile(
-                title: vi ? 'Bản đồ gia đình' : 'Family map',
-                subtitle: vi
-                    ? 'Nơi người thân đang sinh sống'
-                    : 'Where your relatives live',
-                icon: Icons.map_outlined,
-                accent: MyLifeDesign.teal,
-                onTap: () => _open(context, const FamilyMapScreen()),
-              ),
-              const SizedBox(height: 10),
-              _FamilySpaceTile(
-                title: vi ? 'Dòng thời gian' : 'Family timeline',
-                subtitle: vi
-                    ? 'Những dấu mốc qua từng năm'
-                    : 'Milestones across the years',
-                icon: Icons.timeline_rounded,
-                accent: MyLifeDesign.teal,
-                onTap: () => _open(context, const FamilyTimelineScreen()),
-              ),
-              const SizedBox(height: 30),
+              if (upcomingItems.isNotEmpty) ...[
+                _SectionHeading(
+                  title: vi ? 'Sắp tới' : 'Coming up',
+                  action: vi ? 'Xem lịch' : 'Calendar',
+                  onAction: () => _open(
+                      context, const MemoriesShellScreen(initialIndex: 1)),
+                ),
+                const SizedBox(height: 12),
+                ...upcomingItems.take(3).map((item) => _TodayItem(
+                    item: item,
+                    vi: vi,
+                    isToday: false,
+                    onTap: () => _open(
+                        context,
+                        MemoriesShellScreen(
+                            initialIndex: 1, initialAnniversaryId: item.id)))),
+                const SizedBox(height: 18),
+              ],
               _SectionHeading(
                 title: vi ? 'Ký ức gần đây' : 'Recent memories',
-                action: vi ? 'Mở thư viện' : 'Open library',
-                onAction: () => _open(context, const LibraryScreen()),
+                action: vi ? 'Mở ký ức' : 'Open memories',
+                onAction: () =>
+                    _open(context, const MemoriesShellScreen(initialIndex: 2)),
               ),
               const SizedBox(height: 12),
               _RecentMemory(
                 photo: recentPhoto,
                 albumCount: albums.length,
                 vi: vi,
-                onTap: () => _open(context, const LibraryScreen()),
+                onTap: () =>
+                    _open(context, const MemoriesShellScreen(initialIndex: 2)),
               ),
             ]),
           ),
@@ -360,81 +337,50 @@ class _QuietDay extends StatelessWidget {
 }
 
 class _TodayItem extends StatelessWidget {
-  const _TodayItem({required this.item, required this.vi});
+  const _TodayItem(
+      {required this.item,
+      required this.vi,
+      required this.onTap,
+      this.isToday = true});
   final FamilyAnniversary item;
   final bool vi;
+  final VoidCallback onTap;
+  final bool isToday;
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.only(bottom: 8),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surfaceContainerLow,
-              borderRadius: BorderRadius.circular(MyLifeDesign.cardRadius)),
-          child: Row(children: [
-            const Icon(Icons.event_rounded, color: MyLifeDesign.amber),
-            const SizedBox(width: 12),
-            Expanded(
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                  Text(item.title,
-                      style: const TextStyle(fontWeight: FontWeight.w700)),
-                  if (item.relatedMemberName?.isNotEmpty == true)
-                    Text(item.relatedMemberName!,
-                        style: Theme.of(context).textTheme.bodySmall),
-                ])),
-            Text(vi ? 'Hôm nay' : 'Today',
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: MyLifeDesign.amber, fontWeight: FontWeight.w700)),
-          ]),
-        ),
-      );
-}
-
-class _FamilySpaceTile extends StatelessWidget {
-  const _FamilySpaceTile(
-      {required this.title,
-      required this.subtitle,
-      required this.icon,
-      required this.accent,
-      required this.onTap});
-  final String title, subtitle;
-  final IconData icon;
-  final Color accent;
-  final VoidCallback onTap;
-  @override
-  Widget build(BuildContext context) => Material(
-        color: Theme.of(context).colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(MyLifeDesign.cardRadius),
-        child: InkWell(
-            borderRadius: BorderRadius.circular(MyLifeDesign.cardRadius),
+        child: Material(
+          color: Theme.of(context).colorScheme.surfaceContainerLow,
+          borderRadius: BorderRadius.circular(MyLifeDesign.cardRadius),
+          child: InkWell(
             onTap: onTap,
+            borderRadius: BorderRadius.circular(MyLifeDesign.cardRadius),
             child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                child: Row(children: [
-                  Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                          color: accent.withValues(alpha: .13),
-                          borderRadius: BorderRadius.circular(15)),
-                      child: Icon(icon, color: accent)),
-                  const SizedBox(width: 13),
-                  Expanded(
-                      child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                        Text(title,
-                            style:
-                                const TextStyle(fontWeight: FontWeight.w700)),
-                        const SizedBox(height: 3),
-                        Text(subtitle,
+              padding: const EdgeInsets.all(16),
+              child: Row(children: [
+                const Icon(Icons.event_rounded, color: MyLifeDesign.amber),
+                const SizedBox(width: 12),
+                Expanded(
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                      Text(item.title,
+                          style: const TextStyle(fontWeight: FontWeight.w700)),
+                      if (item.relatedMemberName?.isNotEmpty == true)
+                        Text(item.relatedMemberName!,
                             style: Theme.of(context).textTheme.bodySmall),
-                      ])),
-                  const Icon(Icons.chevron_right_rounded),
-                ]))),
+                    ])),
+                Text(
+                  isToday
+                      ? (vi ? 'Hôm nay' : 'Today')
+                      : '${item.daysUntil} ${vi ? 'ngày nữa' : 'days'}',
+                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: MyLifeDesign.amber, fontWeight: FontWeight.w700),
+                ),
+              ]),
+            ),
+          ),
+        ),
       );
 }
 

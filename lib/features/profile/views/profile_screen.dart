@@ -14,7 +14,7 @@ import '../widgets/profile_details_tab.dart';
 import '../widgets/profile_hero_card.dart';
 import '../widgets/profile_security_tab.dart';
 import '../widgets/unauthenticated_profile_card.dart';
-import '../../family_tree/views/family_tree_screen.dart';
+import '../../main_navigation/family_shell_screen.dart';
 import '../../auth/views/login_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -306,7 +306,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => const FamilyTreeScreen(),
+                  builder: (_) => const FamilyShellScreen(),
                 ),
               );
             },

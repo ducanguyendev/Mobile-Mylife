@@ -4,16 +4,22 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/theme/mylife_design_tokens.dart';
 import '../models/family_member_model.dart';
 import '../models/family_v2_models.dart';
+import '../models/timeline_ownership.dart';
 import '../services/family_v2_api_service.dart';
+import '../../main_navigation/memories_shell_screen.dart';
 
 class FamilyMemberProfileScreen extends ConsumerStatefulWidget {
   const FamilyMemberProfileScreen(
       {super.key,
       required this.member,
       required this.onEdit,
+      required this.onDelete,
+      required this.onOpenRelative,
       required this.onUploadAvatar});
   final FamilyMember member;
   final VoidCallback onEdit;
+  final VoidCallback onDelete;
+  final ValueChanged<FamilyMember> onOpenRelative;
   final VoidCallback onUploadAvatar;
   @override
   ConsumerState<FamilyMemberProfileScreen> createState() =>
@@ -64,6 +70,18 @@ class _FamilyMemberProfileScreenState
                         tooltip: vi ? 'Chỉnh sửa' : 'Edit member',
                         onPressed: widget.onEdit,
                         icon: const Icon(Icons.edit_outlined)),
+                    PopupMenuButton<String>(
+                      tooltip: vi ? 'Tùy chọn thành viên' : 'Member options',
+                      onSelected: (value) {
+                        if (value == 'delete') widget.onDelete();
+                      },
+                      itemBuilder: (_) => [
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Text(vi ? 'Xóa thành viên' : 'Delete member'),
+                        ),
+                      ],
+                    ),
                     IconButton(
                         tooltip: vi ? 'Tải lại' : 'Refresh',
                         onPressed: () => setState(() => _profile = ref
@@ -72,9 +90,9 @@ class _FamilyMemberProfileScreenState
                         icon: const Icon(Icons.refresh_rounded)),
                   ],
                   bottom: TabBar(controller: _tabs, tabs: [
-                    Tab(text: vi ? 'Famiglia' : 'Family'),
-                    Tab(text: vi ? 'Percorso di vita' : 'Life'),
-                    Tab(text: vi ? 'Ricordi' : 'Memories')
+                    Tab(text: vi ? 'Gia đình' : 'Family'),
+                    Tab(text: vi ? 'Cuộc đời' : 'Life'),
+                    Tab(text: vi ? 'Kỷ niệm' : 'Memories')
                   ]),
                 ),
               ],
@@ -128,58 +146,105 @@ class _FamilyMemberProfileScreenState
                   spacing: 8,
                   runSpacing: 8,
                   children: profile.relatives
-                      .map((relative) => _RelativeChip(member: relative))
+                      .map((relative) => _RelativeChip(
+                          member: relative,
+                          label:
+                              '${relative.fullName} · ${relative.role?.isNotEmpty == true ? relative.role : _generationLabel(relative.generation, vi)}',
+                          onTap: () => widget.onOpenRelative(relative)))
                       .toList())),
     ]);
   }
 
-  Widget _timelineTab(FamilyMemberProfile profile, bool vi) =>
-      profile.timeline.isEmpty
-          ? _ProfileEmpty(
-              icon: Icons.timeline_rounded,
-              title: vi ? 'Chưa có dấu mốc' : 'No milestones yet')
-          : ListView(padding: const EdgeInsets.all(20), children: [
-              for (final event in profile.timeline)
-                _ProfileEvent(event: event, vi: vi)
-            ]);
-  Widget _memoriesTab(FamilyMemberProfile profile, bool vi) =>
-      ListView(padding: const EdgeInsets.all(20), children: [
-        _ProfileSection(
+  Widget _timelineTab(FamilyMemberProfile profile, bool vi) => profile
+          .timeline.isEmpty
+      ? _ProfileEmpty(
+          icon: Icons.timeline_rounded,
+          title: vi ? 'Chưa có dấu mốc' : 'No milestones yet')
+      : ListView(padding: const EdgeInsets.all(20), children: [
+          for (final event in profile.timeline)
+            _ProfileEvent(
+                event: event,
+                vi: vi,
+                onTap: () {
+                  if (isMemberDerivedEvent(event)) {
+                    _tabs.animateTo(0);
+                  } else {
+                    Navigator.of(context).push(MaterialPageRoute<void>(
+                      builder: (_) => MemoriesShellScreen(
+                        initialEventId: event.id,
+                        initialAnniversaryId: event.sourceId,
+                        initialIndex: isAnniversaryTimelineEvent(event) ? 1 : 0,
+                      ),
+                    ));
+                  }
+                })
+        ]);
+
+  Widget _memoriesTab(FamilyMemberProfile profile, bool vi) => ListView(
+        padding: const EdgeInsets.all(20),
+        children: [
+          _ProfileSection(
             title: vi ? 'Ngày giỗ & kỷ niệm' : 'Anniversaries',
             child: profile.anniversaries.isEmpty
                 ? Text(vi
                     ? 'Chưa có ngày kỷ niệm được liên kết.'
                     : 'No linked anniversaries yet.')
                 : Column(
-                    children: profile.anniversaries
-                        .map((e) => ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            leading: const Icon(Icons.event_note_rounded,
-                                color: MyLifeDesign.amber),
-                            title: Text(e.title),
-                            subtitle: Text(
-                                '${e.nextSolarDate.day}/${e.nextSolarDate.month}/${e.nextSolarDate.year}')))
-                        .toList())),
-        const SizedBox(height: 14),
-        _ProfileSection(
+                    children: profile.anniversaries.map((event) {
+                      return ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.event_note_rounded,
+                            color: MyLifeDesign.amber),
+                        title: Text(event.title),
+                        subtitle: Text(
+                            '${event.nextSolarDate.day}/${event.nextSolarDate.month}/${event.nextSolarDate.year}'),
+                        onTap: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => MemoriesShellScreen(
+                                initialIndex: 1,
+                                initialAnniversaryId: event.id),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+          ),
+          const SizedBox(height: 14),
+          _ProfileSection(
             title: vi ? 'Thư viện ảnh' : 'Photo library',
-            child: Row(children: [
-              Icon(
+            child: InkWell(
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const MemoriesShellScreen(initialIndex: 2),
+                ),
+              ),
+              child: Row(children: [
+                Icon(
                   profile.libraryMemberLinkAvailable
                       ? Icons.photo_library_outlined
                       : Icons.photo_outlined,
-                  color: MyLifeDesign.violet),
-              const SizedBox(width: 10),
-              Expanded(
+                  color: MyLifeDesign.violet,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
                   child: Text(profile.libraryMemberLinkAvailable
                       ? (vi
                           ? 'Có thể liên kết ảnh với thành viên này.'
                           : 'Photos can be linked to this member.')
                       : (vi
                           ? 'Chưa có ảnh liên kết với thành viên.'
-                          : 'No photos are linked to this member yet.')))
-            ])),
-      ]);
+                          : 'No photos are linked to this member yet.')),
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.chevron_right_rounded),
+              ]),
+            ),
+          ),
+        ],
+      );
+
+  String _generationLabel(int generation, bool vi) =>
+      '${vi ? 'Đời' : 'Gen.'} $generation';
 }
 
 class _ProfileHero extends StatelessWidget {
@@ -228,7 +293,7 @@ class _ProfileHero extends StatelessWidget {
                   overflow: TextOverflow.ellipsis),
               const SizedBox(height: 4),
               Text(
-                  '${vi ? 'Đời' : 'Generation'} ${member.generation} · ${member.lifeStatus == 'DECEASED' ? (vi ? 'Đã mất' : 'Remembered') : (vi ? 'Còn sống' : 'Living')}',
+                  '${member.role?.isNotEmpty == true ? '${member.role} · ' : ''}${vi ? 'Đời' : 'Generation'} ${member.generation} · ${member.lifeStatus == 'DECEASED' ? (vi ? 'Đã mất' : 'Remembered') : (vi ? 'Còn sống' : 'Living')}',
                   style: const TextStyle(color: Colors.white70)),
             ])),
       ]);
@@ -273,19 +338,24 @@ class _ProfileInfo extends StatelessWidget {
 }
 
 class _RelativeChip extends StatelessWidget {
-  const _RelativeChip({required this.member});
+  const _RelativeChip(
+      {required this.member, required this.label, required this.onTap});
   final FamilyMember member;
+  final String label;
+  final VoidCallback onTap;
   @override
-  Widget build(BuildContext context) => Chip(
+  Widget build(BuildContext context) => ActionChip(
       avatar: const Icon(Icons.person_outline, size: 17),
-      label: Text(
-          '${member.fullName} · ${member.role ?? 'Đời ${member.generation}'}'));
+      label: Text(label),
+      onPressed: onTap);
 }
 
 class _ProfileEvent extends StatelessWidget {
-  const _ProfileEvent({required this.event, required this.vi});
+  const _ProfileEvent(
+      {required this.event, required this.vi, required this.onTap});
   final FamilyTimelineEvent event;
   final bool vi;
+  final VoidCallback onTap;
   @override
   Widget build(BuildContext context) => Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -298,28 +368,33 @@ class _ProfileEvent extends StatelessWidget {
                 color: MyLifeDesign.teal, shape: BoxShape.circle)),
         const SizedBox(width: 12),
         Expanded(
-            child: Container(
-                padding: const EdgeInsets.all(15),
-                decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerLow,
-                    borderRadius: BorderRadius.circular(18)),
-                child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                          event.eventDate?.substring(0, 10) ??
-                              event.eventYear?.toString() ??
-                              (vi ? 'Chưa rõ ngày' : 'Unknown date'),
-                          style: Theme.of(context)
-                              .textTheme
-                              .labelMedium
-                              ?.copyWith(color: MyLifeDesign.teal)),
-                      const SizedBox(height: 5),
-                      Text(event.title,
-                          style: const TextStyle(fontWeight: FontWeight.w800)),
-                      if (event.description?.isNotEmpty == true)
-                        Text(event.description!)
-                    ])))
+            child: InkWell(
+                onTap: onTap,
+                borderRadius: BorderRadius.circular(18),
+                child: Container(
+                    padding: const EdgeInsets.all(15),
+                    decoration: BoxDecoration(
+                        color:
+                            Theme.of(context).colorScheme.surfaceContainerLow,
+                        borderRadius: BorderRadius.circular(18)),
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                              event.eventDate?.substring(0, 10) ??
+                                  event.eventYear?.toString() ??
+                                  (vi ? 'Chưa rõ ngày' : 'Unknown date'),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelMedium
+                                  ?.copyWith(color: MyLifeDesign.teal)),
+                          const SizedBox(height: 5),
+                          Text(event.title,
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.w800)),
+                          if (event.description?.isNotEmpty == true)
+                            Text(event.description!)
+                        ]))))
       ]));
 }
 

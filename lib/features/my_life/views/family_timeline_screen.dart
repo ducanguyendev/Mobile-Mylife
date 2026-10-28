@@ -4,13 +4,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/theme/mylife_design_tokens.dart';
 import '../../family_tree/models/family_v2_models.dart';
+import '../../family_tree/models/timeline_ownership.dart';
 import '../../family_tree/providers/family_tree_provider.dart';
 import '../../family_tree/services/family_v2_api_service.dart';
+import '../../family_tree/views/family_member_profile_route.dart';
+import '../../main_navigation/memories_shell_screen.dart';
 
 enum _TimelineFilter { all, birth, marriage, family, location, memory, other }
 
 class FamilyTimelineScreen extends ConsumerStatefulWidget {
-  const FamilyTimelineScreen({super.key});
+  const FamilyTimelineScreen({super.key, this.initialEventId});
+  final int? initialEventId;
   @override
   ConsumerState<FamilyTimelineScreen> createState() =>
       _FamilyTimelineScreenState();
@@ -28,7 +32,20 @@ class _FamilyTimelineScreenState extends ConsumerState<FamilyTimelineScreen> {
   Future<List<FamilyTimelineEvent>> _load() async {
     final notifier = ref.read(familyTreeProvider.notifier);
     if (ref.read(familyTreeProvider).members.isEmpty) await notifier.load();
-    return ref.read(familyV2ApiServiceProvider).getTimeline();
+    final events = await ref.read(familyV2ApiServiceProvider).getTimeline();
+    final linked =
+        events.where((event) => event.id == widget.initialEventId).firstOrNull;
+    if (linked != null) {
+      _filter = switch (linked.eventType) {
+        'BIRTH' || 'DEATH' => _TimelineFilter.birth,
+        'MARRIAGE' => _TimelineFilter.marriage,
+        'CUSTOM' || 'CHILD_BIRTH' => _TimelineFilter.family,
+        'ADDRESS_CHANGE' => _TimelineFilter.location,
+        'MEMORY' || 'ANNIVERSARY' => _TimelineFilter.memory,
+        _ => _TimelineFilter.other,
+      };
+    }
+    return events;
   }
 
   bool _matches(String type) {
@@ -58,6 +75,8 @@ class _FamilyTimelineScreenState extends ConsumerState<FamilyTimelineScreen> {
         ].contains(type);
     }
   }
+
+  bool _owns(FamilyTimelineEvent event) => isTimelineOwnedEvent(event);
 
   String? get _createType => switch (_filter) {
         _TimelineFilter.birth || _TimelineFilter.other => null,
@@ -149,6 +168,9 @@ class _FamilyTimelineScreenState extends ConsumerState<FamilyTimelineScreen> {
                         _TimelineEventTile(
                             event: event,
                             vi: vi,
+                            canManage: _owns(event),
+                            highlighted: event.id == widget.initialEventId,
+                            onOpen: () => _openOwner(event, vi),
                             onEdit: () => _edit(event: event, vi: vi),
                             onDelete: () => _delete(event, vi)),
                     ],
@@ -219,9 +241,7 @@ class _FamilyTimelineScreenState extends ConsumerState<FamilyTimelineScreen> {
           ? 1 << 62
           : DateTime(e.eventYear!, 1, 1).millisecondsSinceEpoch;
   Future<void> _edit({FamilyTimelineEvent? event, required bool vi}) async {
-    if (event?.isDerived == true ||
-        event?.eventType == 'BIRTH' ||
-        event?.eventType == 'DEATH') {
+    if (event != null && !_owns(event)) {
       return;
     }
     final api = ref.read(familyV2ApiServiceProvider);
@@ -407,9 +427,7 @@ class _FamilyTimelineScreenState extends ConsumerState<FamilyTimelineScreen> {
   }
 
   Future<void> _delete(FamilyTimelineEvent event, bool vi) async {
-    if (event.isDerived ||
-        event.eventType == 'BIRTH' ||
-        event.eventType == 'DEATH') {
+    if (!_owns(event)) {
       return;
     }
     final yes = await showDialog<bool>(
@@ -439,25 +457,52 @@ class _FamilyTimelineScreenState extends ConsumerState<FamilyTimelineScreen> {
       }
     }
   }
+
+  void _openOwner(FamilyTimelineEvent event, bool vi) {
+    if (isMemberDerivedEvent(event) && event.memberId != null) {
+      final member = ref
+          .read(familyTreeProvider)
+          .members
+          .where((item) => item.id == event.memberId)
+          .firstOrNull;
+      if (member != null) {
+        Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => FamilyMemberProfileRoute(member: member),
+        ));
+      }
+    } else if (isAnniversaryTimelineEvent(event)) {
+      Navigator.of(context).push(MaterialPageRoute<void>(
+        builder: (_) => MemoriesShellScreen(
+          initialIndex: 1,
+          initialAnniversaryId: event.sourceId,
+        ),
+      ));
+    }
+  }
 }
 
 class _TimelineEventTile extends StatelessWidget {
   const _TimelineEventTile(
       {required this.event,
       required this.vi,
+      required this.canManage,
+      required this.highlighted,
+      required this.onOpen,
       required this.onEdit,
       required this.onDelete});
   final FamilyTimelineEvent event;
   final bool vi;
+  final bool canManage;
+  final bool highlighted;
+  final VoidCallback onOpen;
   final VoidCallback onEdit, onDelete;
   @override
   Widget build(BuildContext context) {
     final date = event.eventDate != null
         ? event.eventDate!.substring(0, 10)
         : event.eventYear?.toString() ?? (vi ? 'Chưa rõ ngày' : 'Unknown date');
-    final locked = event.isDerived ||
-        event.eventType == 'BIRTH' ||
-        event.eventType == 'DEATH';
+    final memberEvent = isMemberDerivedEvent(event);
+    final anniversaryEvent = isAnniversaryTimelineEvent(event);
     return Padding(
         padding: const EdgeInsets.only(bottom: 14),
         child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -474,63 +519,73 @@ class _TimelineEventTile extends StatelessWidget {
                   color: MyLifeDesign.teal, shape: BoxShape.circle)),
           const SizedBox(width: 12),
           Expanded(
-              child: Container(
-                  padding: const EdgeInsets.all(15),
-                  decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.surfaceContainerLow,
-                      borderRadius: BorderRadius.circular(18)),
-                  child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(children: [
-                          Expanded(
-                              child: Text(event.title,
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.w800))),
-                          if (locked)
-                            const Icon(Icons.lock_outline, size: 15)
-                          else
-                            PopupMenuButton<String>(
-                                itemBuilder: (_) => [
-                                      PopupMenuItem(
-                                          value: 'edit',
-                                          child: Text(vi ? 'Sửa' : 'Edit')),
-                                      PopupMenuItem(
-                                          value: 'delete',
-                                          child: Text(vi ? 'Xóa' : 'Delete'))
-                                    ],
-                                onSelected: (v) =>
-                                    v == 'edit' ? onEdit() : onDelete())
-                        ]),
-                        Text(
-                            [
-                              if (event.memberName?.isNotEmpty == true)
-                                event.memberName!,
-                              event.eventType,
-                              ...[
-                                if (event.isApproximate)
-                                  (vi ? 'ước lượng' : 'approximate'),
-                                if (event.isDerived)
-                                  (vi ? 'tự động' : 'derived')
-                              ]
-                            ].join(' · '),
-                            style: Theme.of(context)
-                                .textTheme
-                                .labelSmall
-                                ?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant)),
-                        if (event.description?.isNotEmpty == true) ...[
-                          const SizedBox(height: 7),
-                          Text(event.description!)
-                        ],
-                        if (event.location?.isNotEmpty == true) ...[
-                          const SizedBox(height: 6),
-                          Text('⌖ ${event.location}',
-                              style: Theme.of(context).textTheme.bodySmall)
-                        ],
-                      ]))),
+              child: Material(
+            color: Theme.of(context).colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(18),
+            child: InkWell(
+                onTap: onOpen,
+                borderRadius: BorderRadius.circular(18),
+                child: Container(
+                    padding: const EdgeInsets.all(15),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(18),
+                      border: highlighted
+                          ? Border.all(color: MyLifeDesign.teal, width: 1.5)
+                          : null,
+                    ),
+                    child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(children: [
+                            Expanded(
+                                child: Text(event.title,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w800))),
+                            if (canManage)
+                              PopupMenuButton<String>(
+                                  itemBuilder: (_) => [
+                                        PopupMenuItem(
+                                            value: 'edit',
+                                            child: Text(vi ? 'Sửa' : 'Edit')),
+                                        PopupMenuItem(
+                                            value: 'delete',
+                                            child: Text(vi ? 'Xóa' : 'Delete'))
+                                      ],
+                                  onSelected: (v) =>
+                                      v == 'edit' ? onEdit() : onDelete())
+                            else if (memberEvent || anniversaryEvent)
+                              const Icon(Icons.open_in_new_rounded, size: 15)
+                          ]),
+                          Text(
+                              [
+                                if (event.memberName?.isNotEmpty == true)
+                                  event.memberName!,
+                                event.eventType,
+                                ...[
+                                  if (event.isApproximate)
+                                    (vi ? 'ước lượng' : 'approximate'),
+                                  if (event.isDerived)
+                                    (vi ? 'tự động' : 'derived')
+                                ]
+                              ].join(' · '),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurfaceVariant)),
+                          if (event.description?.isNotEmpty == true) ...[
+                            const SizedBox(height: 7),
+                            Text(event.description!)
+                          ],
+                          if (event.location?.isNotEmpty == true) ...[
+                            const SizedBox(height: 6),
+                            Text('⌖ ${event.location}',
+                                style: Theme.of(context).textTheme.bodySmall)
+                          ],
+                        ]))),
+          )),
         ]));
   }
 }

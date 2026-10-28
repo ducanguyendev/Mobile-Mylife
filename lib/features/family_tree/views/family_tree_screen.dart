@@ -1,8 +1,6 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../../../shared/theme/app_colors.dart';
 import '../../../shared/theme/app_theme_provider.dart';
@@ -11,21 +9,30 @@ import '../../auth/providers/auth_state.dart';
 import '../models/family_member_model.dart';
 import '../providers/family_tree_provider.dart';
 import '../services/family_tree_api_service.dart';
-import 'family_member_profile_screen.dart';
+import 'family_member_profile_route.dart';
 import '../widgets/member_form_bottom_sheet.dart';
 
 class FamilyTreeScreen extends ConsumerStatefulWidget {
-  const FamilyTreeScreen({super.key});
+  const FamilyTreeScreen(
+      {super.key,
+      this.initialViewMode = 'list',
+      this.embedded = false,
+      this.showViewSelector = true,
+      this.showAddButton = true});
+  final String initialViewMode;
+  final bool embedded;
+  final bool showViewSelector;
+  final bool showAddButton;
 
   @override
-  ConsumerState<FamilyTreeScreen> createState() => _FamilyTreeScreenState();
+  ConsumerState<FamilyTreeScreen> createState() => FamilyTreeScreenState();
 }
 
-class _FamilyTreeScreenState extends ConsumerState<FamilyTreeScreen> {
+class FamilyTreeScreenState extends ConsumerState<FamilyTreeScreen> {
   final _search = TextEditingController();
   String _query = '';
   int? _generation;
-  String _viewMode = 'list';
+  late String _viewMode;
   final Map<int, Future<Uint8List>> _avatarFutures = {};
 
   @override
@@ -37,6 +44,7 @@ class _FamilyTreeScreenState extends ConsumerState<FamilyTreeScreen> {
   @override
   void initState() {
     super.initState();
+    _viewMode = widget.initialViewMode;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         ref.read(familyTreeProvider.notifier).load();
@@ -68,71 +76,11 @@ class _FamilyTreeScreenState extends ConsumerState<FamilyTreeScreen> {
     );
   }
 
-  Future<void> _confirmDelete(FamilyMember member) async {
-    final isDark = ref.read(themeModeProvider) == ThemeMode.dark;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor:
-            isDark ? AppColors.secondaryBg : AppColors.secondaryBgLight,
-        title: const Text('Xóa thành viên?'),
-        content: Text(
-          'Bạn có chắc muốn xóa ${member.fullName}? Các liên kết gia đình liên quan sẽ được cập nhật.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Hủy'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            style: TextButton.styleFrom(foregroundColor: AppColors.error),
-            child: const Text('Xóa'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true || !mounted) return;
-
-    final deleted =
-        await ref.read(familyTreeProvider.notifier).deleteMember(member.id);
-    if (deleted && mounted) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(
-          SnackBar(content: Text('Đã xóa ${member.fullName} khỏi gia phả.')),
-        );
-    }
-  }
+  void addMember() => _showMemberForm();
 
   Future<void> _showDetails(FamilyMember member) async {
     await Navigator.of(context).push(MaterialPageRoute<void>(
-      builder: (_) => FamilyMemberProfileScreen(
-        member: member,
-        onEdit: () {
-          Navigator.of(context).pop();
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            if (mounted) _showMemberForm(member: member);
-          });
-        },
-        onUploadAvatar: () async {
-          final image = await ImagePicker().pickImage(
-            source: ImageSource.gallery,
-            maxWidth: 1024,
-            maxHeight: 1024,
-            imageQuality: 82,
-          );
-          if (image == null || !mounted) return;
-          final done = await ref
-              .read(familyTreeProvider.notifier)
-              .uploadAvatar(member.id, File(image.path));
-          if (done && mounted) {
-            _avatarFutures.remove(member.id);
-            setState(() {});
-          }
-        },
-      ),
+      builder: (_) => FamilyMemberProfileRoute(member: member),
     ));
   }
 
@@ -180,17 +128,6 @@ class _FamilyTreeScreenState extends ConsumerState<FamilyTreeScreen> {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(color: secondary, fontSize: 12))),
                 ])),
-            PopupMenuButton<String>(
-                onSelected: (action) {
-                  if (action == 'edit') _showMemberForm(member: member);
-                  if (action == 'delete') _confirmDelete(member);
-                },
-                itemBuilder: (_) => [
-                      PopupMenuItem(
-                          value: 'edit', child: Text(vi ? 'Sửa' : 'Edit')),
-                      PopupMenuItem(
-                          value: 'delete', child: Text(vi ? 'Xóa' : 'Delete'))
-                    ]),
           ]),
         ),
       ),
@@ -257,17 +194,7 @@ class _FamilyTreeScreenState extends ConsumerState<FamilyTreeScreen> {
                 Text('${member.childIds.length} ${vi ? 'con' : 'children'}',
                     style: TextStyle(color: secondary, fontSize: 12)),
                 const Spacer(),
-                IconButton(
-                    visualDensity: VisualDensity.compact,
-                    tooltip: vi ? 'Sửa' : 'Edit',
-                    onPressed: () => _showMemberForm(member: member),
-                    icon: const Icon(Icons.edit_outlined, size: 19)),
-                IconButton(
-                    visualDensity: VisualDensity.compact,
-                    tooltip: vi ? 'Xóa' : 'Delete',
-                    onPressed: () => _confirmDelete(member),
-                    icon: const Icon(Icons.delete_outline,
-                        size: 19, color: AppColors.error))
+                Icon(Icons.open_in_new_rounded, size: 18, color: secondary),
               ]),
             ]),
           )),
@@ -336,25 +263,28 @@ class _FamilyTreeScreenState extends ConsumerState<FamilyTreeScreen> {
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.primaryBg : AppColors.primaryBgLight,
-      appBar: AppBar(
-        title: const Text('Quản lý Gia phả'),
-        backgroundColor:
-            isDark ? AppColors.secondaryBg : AppColors.secondaryBgLight,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: familyTree.isLoading || familyTree.isMutating
-                ? null
-                : () => ref.read(familyTreeProvider.notifier).refresh(),
-            tooltip: 'Tải lại',
-          ),
-          IconButton(
-            icon: const Icon(Icons.person_add),
-            onPressed: familyTree.isMutating ? null : _showMemberForm,
-            tooltip: 'Thêm tổ tiên (gốc)',
-          ),
-        ],
-      ),
+      appBar: widget.embedded
+          ? null
+          : AppBar(
+              title: const Text('Quản lý Gia phả'),
+              backgroundColor:
+                  isDark ? AppColors.secondaryBg : AppColors.secondaryBgLight,
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  onPressed: familyTree.isLoading || familyTree.isMutating
+                      ? null
+                      : () => ref.read(familyTreeProvider.notifier).refresh(),
+                  tooltip: 'Tải lại',
+                ),
+                if (widget.showAddButton)
+                  IconButton(
+                    icon: const Icon(Icons.person_add),
+                    onPressed: familyTree.isMutating ? null : _showMemberForm,
+                    tooltip: 'Thêm tổ tiên (gốc)',
+                  ),
+              ],
+            ),
       body: _buildBody(familyTree, isDark),
     );
   }
@@ -440,36 +370,37 @@ class _FamilyTreeScreenState extends ConsumerState<FamilyTreeScreen> {
                       ],
                       onChanged: (v) => setState(() => _generation = v))),
             ]),
-            const SizedBox(height: 10),
-            SegmentedButton<String>(
-              showSelectedIcon: false,
-              segments: [
-                ButtonSegment(
-                    value: 'tree',
-                    icon: const Icon(Icons.account_tree_outlined),
-                    label: Text(vi ? 'Cây' : 'Tree')),
-                ButtonSegment(
-                    value: 'cards',
-                    icon: const Icon(Icons.grid_view_rounded),
-                    label: Text(vi ? 'Thẻ' : 'Cards')),
-                ButtonSegment(
-                    value: 'list',
-                    icon: const Icon(Icons.view_list_rounded),
-                    label: Text(vi ? 'Danh sách' : 'List')),
-              ],
-              selected: {_viewMode},
-              onSelectionChanged: (value) {
-                HapticFeedback.selectionClick();
-                setState(() => _viewMode = value.first);
-              },
-            ),
+            if (widget.showViewSelector) const SizedBox(height: 10),
+            if (widget.showViewSelector)
+              SegmentedButton<String>(
+                showSelectedIcon: false,
+                segments: [
+                  ButtonSegment(
+                      value: 'tree',
+                      icon: const Icon(Icons.account_tree_outlined),
+                      label: Text(vi ? 'Cây' : 'Tree')),
+                  ButtonSegment(
+                      value: 'cards',
+                      icon: const Icon(Icons.grid_view_rounded),
+                      label: Text(vi ? 'Thẻ' : 'Cards')),
+                  ButtonSegment(
+                      value: 'list',
+                      icon: const Icon(Icons.view_list_rounded),
+                      label: Text(vi ? 'Danh sách' : 'List')),
+                ],
+                selected: {_viewMode},
+                onSelectionChanged: (value) {
+                  HapticFeedback.selectionClick();
+                  setState(() => _viewMode = value.first);
+                },
+              ),
             if (familyTree.isLoading || familyTree.isMutating)
               const Padding(
                 padding: EdgeInsets.only(bottom: 12),
                 child: LinearProgressIndicator(),
               ),
             if (familyTree.members.isEmpty)
-              _emptyTree(isDark)
+              _emptyTree(isDark, allowAdd: widget.showAddButton)
             else if (_viewMode == 'tree')
               _buildTree(matching, isDark, vi)
             else if (_viewMode == 'cards')
@@ -572,7 +503,7 @@ class _FamilyTreeScreenState extends ConsumerState<FamilyTreeScreen> {
     );
   }
 
-  Widget _emptyTree(bool isDark) {
+  Widget _emptyTree(bool isDark, {required bool allowAdd}) {
     return Padding(
       padding: const EdgeInsets.only(top: 72),
       child: Column(
@@ -591,12 +522,14 @@ class _FamilyTreeScreenState extends ConsumerState<FamilyTreeScreen> {
                   : AppColors.textSecondaryLight,
             ),
           ),
-          const SizedBox(height: 8),
-          TextButton.icon(
-            onPressed: _showMemberForm,
-            icon: const Icon(Icons.person_add),
-            label: const Text('Thêm thành viên đầu tiên'),
-          ),
+          if (allowAdd) ...[
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: _showMemberForm,
+              icon: const Icon(Icons.person_add),
+              label: const Text('Thêm thành viên đầu tiên'),
+            ),
+          ],
         ],
       ),
     );

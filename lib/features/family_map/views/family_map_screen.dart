@@ -10,6 +10,8 @@ import '../../../shared/theme/app_colors.dart';
 import '../models/family_map_data.dart';
 import '../providers/family_map_provider.dart';
 import '../services/family_map_api_service.dart';
+import '../../family_tree/providers/family_tree_provider.dart';
+import '../../family_tree/views/family_member_profile_route.dart';
 
 class _MapKeyMissing extends StatelessWidget {
   const _MapKeyMissing();
@@ -148,7 +150,8 @@ class _VietMapPickerLayerState extends State<_VietMapPickerLayer> {
 }
 
 class FamilyMapScreen extends ConsumerWidget {
-  const FamilyMapScreen({super.key});
+  const FamilyMapScreen({super.key, this.embedded = false});
+  final bool embedded;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final lang = Localizations.localeOf(context).languageCode;
@@ -156,21 +159,24 @@ class FamilyMapScreen extends ConsumerWidget {
     final state = ref.watch(familyMapProvider);
     final data = state.valueOrNull;
     return Scaffold(
-        appBar: AppBar(
-            title: Text(vi ? 'Bản đồ gia đình' : 'Family Map'),
-            actions: [
-              IconButton(
-                  tooltip:
-                      vi ? 'Chỉnh vị trí thành viên' : 'Adjust member location',
-                  onPressed: data == null || data.members.isEmpty
-                      ? null
-                      : () => _pickLocation(context, ref, data, vi),
-                  icon: const Icon(Icons.edit_location_alt_outlined)),
-              IconButton(
-                  onPressed: () =>
-                      ref.read(familyMapProvider.notifier).refresh(),
-                  icon: const Icon(Icons.refresh))
-            ]),
+        appBar: embedded
+            ? null
+            : AppBar(
+                title: Text(vi ? 'Bản đồ gia đình' : 'Family Map'),
+                actions: [
+                    IconButton(
+                        tooltip: vi
+                            ? 'Chỉnh vị trí thành viên'
+                            : 'Adjust member location',
+                        onPressed: data == null || data.members.isEmpty
+                            ? null
+                            : () => _pickLocation(context, ref, data, vi),
+                        icon: const Icon(Icons.edit_location_alt_outlined)),
+                    IconButton(
+                        onPressed: () =>
+                            ref.read(familyMapProvider.notifier).refresh(),
+                        icon: const Icon(Icons.refresh))
+                  ]),
         body: state.isLoading && data == null
             ? const Center(child: CircularProgressIndicator())
             : state.hasError && data == null
@@ -209,8 +215,12 @@ class FamilyMapScreen extends ConsumerWidget {
                                       borderRadius: BorderRadius.circular(18),
                                       child: _useNativeVietMap
                                           ? _familyMapBaseLayer(data.locations,
-                                              onMembers: (loc) =>
-                                                  _members(context, loc, vi))
+                                              onMembers: (loc) => _members(
+                                                  context,
+                                                  loc,
+                                                  vi,
+                                                  (id) => _openMember(
+                                                      context, ref, id)))
                                           : !kIsWeb
                                               ? const _MapKeyMissing()
                                               : FlutterMap(
@@ -222,8 +232,7 @@ class FamilyMapScreen extends ConsumerWidget {
                                                           : _center(
                                                               data.locations),
                                                       initialZoom:
-                                                          data.locations.length >
-                                                                  1
+                                                          data.locations.length > 1
                                                               ? 5.2
                                                               : 6.0,
                                                       initialCameraFit: data
@@ -239,8 +248,15 @@ class FamilyMapScreen extends ConsumerWidget {
                                                       _familyMapBaseLayer(
                                                           data.locations,
                                                           onMembers: (loc) =>
-                                                              _members(context,
-                                                                  loc, vi)),
+                                                              _members(
+                                                                  context,
+                                                                  loc,
+                                                                  vi,
+                                                                  (id) =>
+                                                                      _openMember(
+                                                                          context,
+                                                                          ref,
+                                                                          id))),
                                                       if (!_useNativeVietMap)
                                                         MarkerLayer(
                                                             markers: data
@@ -252,7 +268,7 @@ class FamilyMapScreen extends ConsumerWidget {
                                                                     width: 72,
                                                                     height: 60,
                                                                     child: GestureDetector(
-                                                                        onTap: () => _members(context, loc, vi),
+                                                                        onTap: () => _members(context, loc, vi, (id) => _openMember(context, ref, id)),
                                                                         child: Column(children: [
                                                                           Container(
                                                                               padding: const EdgeInsets.symmetric(
@@ -558,8 +574,8 @@ class FamilyMapScreen extends ConsumerWidget {
       child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           child: Text('$label  ·  $value')));
-  static void _members(
-          BuildContext context, FamilyMapLocation location, bool vi) =>
+  static void _members(BuildContext context, FamilyMapLocation location,
+          bool vi, ValueChanged<int> onMemberTap) =>
       showModalBottomSheet<void>(
           context: context,
           showDragHandle: true,
@@ -574,6 +590,19 @@ class FamilyMapScreen extends ConsumerWidget {
                     leading: const Icon(Icons.person_outline),
                     title: Text(m.fullName),
                     subtitle:
-                        Text('${vi ? 'Đời' : 'Generation'} ${m.generation}')))
+                        Text('${vi ? 'Đời' : 'Generation'} ${m.generation}'),
+                    onTap: () {
+                      Navigator.of(ctx).pop();
+                      onMemberTap(m.id);
+                    }))
               ])));
+
+  static void _openMember(BuildContext context, WidgetRef ref, int id) {
+    final members = ref.read(familyTreeProvider).members;
+    final member = members.where((item) => item.id == id).firstOrNull;
+    if (member == null) return;
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => FamilyMemberProfileRoute(member: member),
+    ));
+  }
 }

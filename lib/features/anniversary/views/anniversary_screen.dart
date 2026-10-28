@@ -11,7 +11,8 @@ import '../providers/anniversary_provider.dart';
 import '../services/anniversary_api_service.dart';
 
 class AnniversaryScreen extends ConsumerStatefulWidget {
-  const AnniversaryScreen({super.key});
+  const AnniversaryScreen({super.key, this.initialEventId});
+  final int? initialEventId;
   @override
   ConsumerState<AnniversaryScreen> createState() => _AnniversaryScreenState();
 }
@@ -20,11 +21,29 @@ class _AnniversaryScreenState extends ConsumerState<AnniversaryScreen> {
   DateTime _focused = DateTime.now();
   DateTime? _selected;
   final _search = TextEditingController();
+  bool _deepLinkApplied = false;
   String _query = '';
 
   @override
   void initState() {
     super.initState();
+    if (widget.initialEventId != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        try {
+          final events = await ref.read(anniversaryProvider.future);
+          final event = events
+              .where((item) => item.id == widget.initialEventId)
+              .firstOrNull;
+          if (!mounted || event == null || _deepLinkApplied) return;
+          setState(() {
+            _deepLinkApplied = true;
+            _selected = DateTime(event.nextSolarDate.year,
+                event.nextSolarDate.month, event.nextSolarDate.day);
+            _focused = event.nextSolarDate;
+          });
+        } catch (_) {}
+      });
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) ref.read(familyTreeProvider.notifier).load();
     });
